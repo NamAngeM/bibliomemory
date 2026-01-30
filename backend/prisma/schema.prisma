@@ -1,0 +1,414 @@
+// schema.prisma - BiblioMemory Academic Library
+// Updated for Student/Establishment workflow
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  PLATFORM_ADMIN    // Admin plateforme (peut publier)
+  ESTABLISHMENT     // Compte établissement (peut déposer + valider)
+  STUDENT           // Compte étudiant (peut déposer)
+}
+
+enum DocumentStatus {
+  DRAFT                      // Brouillon (établissement)
+  SUBMITTED_BY_STUDENT       // Soumis par étudiant
+  SUBMITTED_BY_ESTABLISHMENT // Déposé par établissement
+  UNDER_REVIEW               // En vérification
+  VALIDATED                  // Validé par établissement
+  PUBLISHED                  // Visible publiquement
+  REJECTED                   // Refusé
+  ARCHIVED                   // Archivé (anciens mémoires)
+}
+
+enum SubmissionSource {
+  STUDENT
+  ESTABLISHMENT
+}
+
+enum DocumentType {
+  MEMOIR
+  THESIS
+  INTERNSHIP_REPORT
+  PROJECT
+}
+
+enum Language {
+  FR
+  EN
+  ES
+  AR
+  DE
+  IT
+}
+
+enum SupervisorTitle {
+  PROFESSOR
+  ASSOCIATE_PROFESSOR
+  ASSISTANT_PROFESSOR
+  DOCTOR
+  PHD_CANDIDATE
+  ENGINEER
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  passwordHash   String    @map("password_hash")
+  firstName      String    @map("first_name") @db.VarChar(100)
+  lastName       String    @map("last_name") @db.VarChar(100)
+  role           UserRole  @default(STUDENT)
+  institutionId  String?   @map("institution_id")
+  isActive       Boolean   @default(true) @map("is_active")
+  lastLogin      DateTime? @map("last_login")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  institution        Institution?  @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  student            Student?
+  uploadedDocuments  Document[]    @relation("UploadedBy")
+  validatedDocuments Document[]    @relation("ValidatedBy")
+  publishedDocuments Document[]    @relation("PublishedBy")
+
+  @@index([email])
+  @@index([role])
+  @@index([institutionId])
+  @@map("users")
+}
+
+// ============================================
+// STUDENT PROFILE
+// ============================================
+
+model Student {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  matricule     String?  @db.VarChar(50)
+  cycleId       String?  @map("cycle_id")
+  fieldId       String?  @map("field_id")
+  className     String?  @map("class_name") @db.VarChar(100)
+  promotion     String?  @db.VarChar(50) // Ex: "2023-2024"
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycle     Cycle?     @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+  field     Field?     @relation(fields: [fieldId], references: [id], onDelete: SetNull)
+  documents Document[] @relation("SubmittedByStudent")
+
+  @@index([userId])
+  @@index([matricule])
+  @@map("students")
+}
+
+// ============================================
+// INSTITUTIONAL STRUCTURE
+// ============================================
+
+model Institution {
+  id        String   @id @default(uuid())
+  name      String   @unique @db.VarChar(255)
+  acronym   String?  @db.VarChar(20)
+  country   String   @default("France") @db.VarChar(100)
+  city      String?  @db.VarChar(100)
+  website   String?  @db.VarChar(255)
+  logoUrl   String?  @map("logo_url") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  users       User[]
+  faculties   Faculty[]
+  documents   Document[]
+  supervisors Supervisor[]
+
+  @@index([name])
+  @@map("institutions")
+}
+
+model Faculty {
+  id            String   @id @default(uuid())
+  institutionId String   @map("institution_id")
+  name          String   @db.VarChar(255)
+  acronym       String?  @db.VarChar(20)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  fields      Field[]
+  documents   Document[]
+
+  @@unique([institutionId, name])
+  @@index([institutionId])
+  @@map("faculties")
+}
+
+model Field {
+  id          String   @id @default(uuid())
+  facultyId   String   @map("faculty_id")
+  name        String   @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  faculty   Faculty    @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  documents Document[]
+  students  Student[]
+
+  @@unique([facultyId, name])
+  @@index([facultyId])
+  @@index([slug])
+  @@map("fields")
+}
+
+model Cycle {
+  id    String @id @default(uuid())
+  name  String @unique @db.VarChar(100)
+  level Int    // 1=Licence, 2=Master, 3=Doctorat, etc.
+  slug  String @unique @db.VarChar(100)
+
+  // Relations
+  documents Document[]
+  students  Student[]
+
+  @@index([level])
+  @@index([slug])
+  @@map("cycles")
+}
+
+// ============================================
+// PEOPLE
+// ============================================
+
+model Author {
+  id        String   @id @default(uuid())
+  firstName String   @map("first_name") @db.VarChar(100)
+  lastName  String   @map("last_name") @db.VarChar(100)
+  email     String?  @db.VarChar(255)
+  photoUrl  String?  @map("photo_url") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  documents Document[]
+
+  @@unique([firstName, lastName, email])
+  @@index([lastName, firstName])
+  @@map("authors")
+}
+
+model Supervisor {
+  id            String          @id @default(uuid())
+  firstName     String          @map("first_name") @db.VarChar(100)
+  lastName      String          @map("last_name") @db.VarChar(100)
+  email         String?         @db.VarChar(255)
+  title         SupervisorTitle
+  institutionId String?         @map("institution_id")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  institution        Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  mainSupervisedDocs Document[]   @relation("MainSupervisor")
+  coSupervisedDocs   Document[]   @relation("CoSupervisor")
+
+  @@unique([firstName, lastName, email])
+  @@index([lastName, firstName])
+  @@index([institutionId])
+  @@map("supervisors")
+}
+
+// ============================================
+// DOCUMENTS
+// ============================================
+
+model Document {
+  id               String           @id @default(uuid())
+  title            String           @db.VarChar(500)
+  slug             String           @unique @db.VarChar(500)
+  abstract         String           @db.Text
+  language         Language         @default(FR)
+  pageCount        Int?             @map("page_count")
+  documentType     DocumentType     @map("document_type")
+  academicYear     String           @map("academic_year") @db.VarChar(20) // Ex: "2023-2024"
+  defenseDate      DateTime         @map("defense_date") @db.Date
+  className        String?          @map("class_name") @db.VarChar(100)
+
+  // References
+  authorId         String           @map("author_id")
+  institutionId    String           @map("institution_id")
+  facultyId        String           @map("faculty_id")
+  fieldId          String           @map("field_id")
+  cycleId          String           @map("cycle_id")
+  mainSupervisorId String           @map("main_supervisor_id")
+  coSupervisorId   String?          @map("co_supervisor_id")
+
+  // File Information
+  fileName         String           @map("file_name") @db.VarChar(255)
+  fileSize         BigInt           @map("file_size") // bytes
+  fileHash         String           @unique @map("file_hash") @db.VarChar(64) // SHA-256
+  s3Key            String           @map("s3_key") @db.VarChar(500)
+  s3Bucket         String           @map("s3_bucket") @db.VarChar(100)
+
+  // Workflow & Submission
+  status           DocumentStatus   @default(DRAFT)
+  submittedBy      SubmissionSource @default(ESTABLISHMENT) @map("submitted_by")
+  studentId        String?          @map("student_id")
+  isConfidential   Boolean          @default(false) @map("is_confidential")
+  embargoUntil     DateTime?        @map("embargo_until") @db.Date
+  isLegacyDocument Boolean          @default(false) @map("is_legacy_document") // For old documents
+
+  // Validation & Publication
+  uploadedBy       String?          @map("uploaded_by")
+  validatedBy      String?          @map("validated_by")
+  validatedAt      DateTime?        @map("validated_at")
+  publishedBy      String?          @map("published_by")
+  publishedAt      DateTime?        @map("published_at")
+  rejectionReason  String?          @map("rejection_reason") @db.Text
+
+  // Statistics
+  viewCount        Int              @default(0) @map("view_count")
+  popularityScore  Float            @default(0.0) @map("popularity_score")
+
+  // Timestamps
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  lastViewedAt     DateTime?        @map("last_viewed_at")
+
+  // Relations
+  author           Author           @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  institution      Institution      @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  faculty          Faculty          @relation(fields: [facultyId], references: [id], onDelete: Restrict)
+  field            Field            @relation(fields: [fieldId], references: [id], onDelete: Restrict)
+  cycle            Cycle            @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  mainSupervisor   Supervisor       @relation("MainSupervisor", fields: [mainSupervisorId], references: [id], onDelete: Restrict)
+  coSupervisor     Supervisor?      @relation("CoSupervisor", fields: [coSupervisorId], references: [id], onDelete: SetNull)
+  student          Student?         @relation("SubmittedByStudent", fields: [studentId], references: [id], onDelete: SetNull)
+  uploadedByUser   User?            @relation("UploadedBy", fields: [uploadedBy], references: [id], onDelete: SetNull)
+  validatedByUser  User?            @relation("ValidatedBy", fields: [validatedBy], references: [id], onDelete: SetNull)
+  publishedByUser  User?            @relation("PublishedBy", fields: [publishedBy], references: [id], onDelete: SetNull)
+
+  keywords         DocumentKeyword[]
+  views            DocumentView[]
+
+  @@index([status])
+  @@index([submittedBy])
+  @@index([authorId])
+  @@index([fieldId])
+  @@index([cycleId])
+  @@index([institutionId])
+  @@index([studentId])
+  @@index([academicYear])
+  @@index([createdAt(sort: Desc)])
+  @@index([viewCount(sort: Desc)])
+  @@index([popularityScore(sort: Desc)])
+  @@index([defenseDate(sort: Desc)])
+  @@map("documents")
+}
+
+// ============================================
+// KEYWORDS (Many-to-Many)
+// ============================================
+
+model Keyword {
+  id         String   @id @default(uuid())
+  keyword    String   @unique @db.VarChar(100)
+  slug       String   @unique @db.VarChar(100)
+  usageCount Int      @default(0) @map("usage_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  documents DocumentKeyword[]
+
+  @@index([usageCount(sort: Desc)])
+  @@index([keyword])
+  @@map("keywords")
+}
+
+model DocumentKeyword {
+  documentId String @map("document_id")
+  keywordId  String @map("keyword_id")
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  keyword  Keyword  @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@id([documentId, keywordId])
+  @@index([documentId])
+  @@index([keywordId])
+  @@map("document_keywords")
+}
+
+// ============================================
+// STATISTICS & ANALYTICS
+// ============================================
+
+model DocumentView {
+  id              String   @id @default(uuid())
+  documentId      String   @map("document_id")
+  viewerIp        String?  @map("viewer_ip")
+  viewerCountry   String?  @map("viewer_country") @db.VarChar(50)
+  viewerCity      String?  @map("viewer_city") @db.VarChar(100)
+  userAgent       String?  @map("user_agent") @db.Text
+  referrer        String?  @db.VarChar(255)
+  sessionDuration Int?     @map("session_duration") // secondes
+  viewedAt        DateTime @default(now()) @map("viewed_at")
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([viewedAt(sort: Desc)])
+  @@map("document_views")
+}
+
+model SearchQuery {
+  id                String   @id @default(uuid())
+  query             String   @db.VarChar(500)
+  filters           Json?    // Filtres appliqués en JSON
+  resultsCount      Int      @map("results_count")
+  clickedDocumentId String?  @map("clicked_document_id")
+  searcherIp        String?  @map("searcher_ip")
+  searchedAt        DateTime @default(now()) @map("searched_at")
+
+  @@index([query])
+  @@index([searchedAt(sort: Desc)])
+  @@map("search_queries")
+}
+
+// ============================================
+// SYSTEM LOGS
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  action    String   @db.VarChar(100) // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entity    String   @db.VarChar(100) // Document, User, etc.
+  entityId  String?  @map("entity_id")
+  changes   Json?    // Avant/Après en JSON
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}

@@ -1,0 +1,89 @@
+================================================================================
+BIBLIOTHÈQUE NUMÉRIQUE ACADÉMIQUE
+Spécifications et Règles de Sécurité du Système
+================================================================================
+
+VERSION: 1.0.0
+DATE: Janvier 2025
+STATUT: Document de Référence Sécurité
+
+Ce document détaille les mesures de sécurité critiques mises en place pour assurer 
+la protection des travaux académiques, la confidentialité des données et 
+l'intégrité de la plateforme.
+
+--------------------------------------------------------------------------------
+1. PROTECTION DES DOCUMENTS (PDF)
+--------------------------------------------------------------------------------
+L'objectif est d'autoriser la consultation en ligne tout en empêchant le 
+téléchargement et la distribution illégale.
+
+1.1 Stratégie de Lecture (Frontend)
+- [cite_start]Utilisation obligatoire de PDF.js (Mozilla) avec un rendu sur Canvas[cite: 6, 78].
+- Désactivation stricte du menu contextuel (clic droit).
+- [cite_start]Désactivation des raccourcis clavier d'impression et d'enregistrement (Ctrl+P, Ctrl+S)[cite: 78].
+- Injection de CSS `@media print { display: none; [cite_start]}` pour bloquer l'impression[cite: 81].
+- [cite_start]Désactivation de la sélection de texte (`user-select: none`)[cite: 78].
+
+1.2 Filigranage Dynamique (Watermarking)
+- [cite_start]Filigrane permanent intégré au PDF lors de l'upload via Python[cite: 80].
+- Overlay dynamique superposé au lecteur affichant :
+  * [cite_start]Nom de la bibliothèque[cite: 29].
+  * [cite_start]Date et heure de consultation[cite: 29, 80].
+  * [cite_start]Adresse IP partielle du visiteur (ex: 192.168.x.x)[cite: 29, 80].
+  * [cite_start]Opacité fixée à 30% en position diagonale[cite: 29].
+
+1.3 Sécurité du Stockage (Cloud)
+- Stockage exclusif sur AWS S3 (Bucket privé).
+- [cite_start]Interdiction formelle de stocker des PDF sur le serveur web/backend[cite: 11].
+- [cite_start]Accès aux fichiers via "Presigned URLs" uniquement (expiration : 1 heure)[cite: 10, 83].
+- [cite_start]Chiffrement au repos (AES-256) et en transit (TLS 1.3)[cite: 10, 79].
+
+--------------------------------------------------------------------------------
+2. AUTHENTIFICATION ET ACCÈS
+--------------------------------------------------------------------------------
+2.1 Gestion des Administrateurs
+- [cite_start]Authentification via JSON Web Tokens (JWT)[cite: 12, 82].
+- [cite_start]Hashage des mots de passe avec Bcrypt (facteur de coût : 12)[cite: 12, 83].
+- [cite_start]Stockage du Refresh Token dans un cookie sécurisé (HttpOnly, SameSite)[cite: 83].
+- [cite_start]Verrouillage automatique du compte après 10 échecs de connexion[cite: 83].
+
+2.2 Limitation de Débit (Rate Limiting)
+- Limitation des requêtes API : 100 requêtes / minute par IP.
+- Limitation de lecture publique : maximum 10 documents par jour par visiteur.
+- [cite_start]Protection contre le brute-force sur les points d'entrée sensibles (/login)[cite: 83].
+
+--------------------------------------------------------------------------------
+3. SÉCURITÉ DU BACKEND (NestJS)
+--------------------------------------------------------------------------------
+3.1 Validation des Entrées
+- [cite_start]Utilisation de Prisma ORM pour prévenir les injections SQL[cite: 7, 84].
+- [cite_start]Validation stricte des schémas via `class-validator`[cite: 140, 158].
+- [cite_start]Sanitization systématique des entrées utilisateur pour prévenir les failles XSS[cite: 84].
+
+3.2 Upload de Fichiers
+- [cite_start]Scan antivirus obligatoire (ClamAV) avant validation du document[cite: 30, 85].
+- [cite_start]Vérification de l'intégrité par Hash SHA-256[cite: 23, 30].
+- [cite_start]Validation du type MIME réel (Magic Numbers) et non seulement de l'extension[cite: 85].
+- [cite_start]Taille maximale par fichier : 50 Mo[cite: 30, 156].
+
+3.3 En-têtes de Sécurité
+- [cite_start]Mise en œuvre de Helmet.js pour configurer les en-têtes HTTP sécurisés[cite: 141, 159].
+- [cite_start]Configuration restrictive du Content Security Policy (CSP)[cite: 84].
+- [cite_start]Configuration CORS limitée au domaine officiel uniquement[cite: 84].
+
+--------------------------------------------------------------------------------
+4. CONFORMITÉ RGPD ET CONFIDENTIALITÉ
+--------------------------------------------------------------------------------
+- [cite_start]Anonymisation automatique des adresses IP dans les logs après 30 jours[cite: 71, 76].
+- Suppression de l'historique des recherches après 90 jours.
+- [cite_start]Mise en place d'une bannière de consentement pour les traceurs non-essentiels[cite: 34, 85].
+- [cite_start]Chiffrement des données personnelles sensibles en base de données[cite: 85].
+
+--------------------------------------------------------------------------------
+5. MAINTENANCE ET SURVEILLANCE
+--------------------------------------------------------------------------------
+- [cite_start]Surveillance des erreurs en temps réel avec Sentry[cite: 13, 141].
+- [cite_start]Backups quotidiens de la base de données avec rétention de 30 jours[cite: 132].
+- [cite_start]Audit de sécurité annuel et tests d'intrusion (Pentest) prévus[cite: 134].
+- [cite_start]Politique de mise à jour immédiate pour les vulnérabilités critiques des dépendances[cite: 162].
+================================================================================

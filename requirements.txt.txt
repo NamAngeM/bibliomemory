@@ -1,0 +1,311 @@
+# ============================================
+# BIBLIOTHÈQUE NUMÉRIQUE ACADÉMIQUE
+# Stack: Next.js + NestJS + PostgreSQL
+# Requirements Python pour Scripts Utilitaires
+# ============================================
+
+# --- Traitement PDF et Filigrane ---
+PyPDF2==3.0.1
+pypdf==4.0.1
+reportlab==4.0.9
+pypdfium2==4.26.0
+pdfplumber==0.10.3
+pdf2image==1.17.0
+
+# --- OCR et Extraction de Texte (optionnel) ---
+pytesseract==0.3.10
+Pillow==10.2.0
+
+# --- Validation de fichiers ---
+python-magic==0.4.27
+filetype==1.2.0
+
+# --- Cloud Storage (AWS S3) ---
+boto3==1.34.34
+botocore==1.34.34
+s3transfer==0.10.0
+
+# --- Cloud Storage (Google Cloud Storage - alternative) ---
+google-cloud-storage==2.14.0
+
+# --- Base de données PostgreSQL ---
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+SQLAlchemy==2.0.25
+alembic==1.13.1
+
+# --- Intégration Meilisearch ---
+meilisearch==0.30.0
+
+# --- Utilitaires ---
+python-dotenv==1.0.1
+python-dateutil==2.8.2
+requests==2.31.0
+aiohttp==3.9.3
+
+# --- Anti-plagiat et Analyse de Texte (optionnel) ---
+nltk==3.8.1
+scikit-learn==1.4.0
+sentence-transformers==2.3.1
+spacy==3.7.2
+
+# --- Extraction de métadonnées PDF ---
+pdfminer.six==20231228
+
+# --- Génération de rapports et statistiques ---
+pandas==2.2.0
+numpy==1.26.3
+matplotlib==3.8.2
+openpyxl==3.1.2
+
+# --- Sécurité et Cryptographie ---
+cryptography==42.0.0
+bcrypt==4.1.2
+
+# --- Tâches planifiées et arrière-plan ---
+celery==5.3.6
+redis==5.0.1
+
+# --- Logging et Monitoring ---
+loguru==0.7.2
+sentry-sdk==1.40.0
+
+# --- Tests ---
+pytest==8.0.0
+pytest-asyncio==0.23.4
+pytest-cov==4.1.0
+
+# --- Qualité du code ---
+black==24.1.1
+flake8==7.0.0
+pylint==3.0.3
+mypy==1.8.0
+
+# --- Scripts CLI ---
+click==8.1.7
+rich==13.7.0
+typer==0.9.0
+
+# ============================================
+# INSTALLATION
+# ============================================
+
+# Installation complète :
+# pip install -r requirements.txt
+
+# Installation minimale (traitement PDF uniquement) :
+# pip install PyPDF2 reportlab boto3 python-dotenv
+
+# ============================================
+# DÉPENDANCES SYSTÈME REQUISES
+# ============================================
+
+# Pour pdf2image (nécessite poppler) :
+# - Ubuntu/Debian: sudo apt-get install poppler-utils
+# - macOS: brew install poppler
+# - Windows: http://blog.alivate.com.au/poppler-windows/
+
+# Pour pytesseract (nécessite Tesseract OCR) :
+# - Ubuntu/Debian: sudo apt-get install tesseract-ocr tesseract-ocr-fra
+# - macOS: brew install tesseract tesseract-lang
+# - Windows: https://github.com/UB-Mannheim/tesseract/wiki
+
+# Pour python-magic (nécessite libmagic) :
+# - Ubuntu/Debian: sudo apt-get install libmagic1
+# - macOS: brew install libmagic
+# - Windows: pip install python-magic-bin
+
+# ============================================
+# CONFIGURATION (.env)
+# ============================================
+
+# AWS_ACCESS_KEY_ID=your_access_key
+# AWS_SECRET_ACCESS_KEY=your_secret_key
+# AWS_S3_BUCKET_NAME=academic-library-documents
+# AWS_REGION=eu-west-1
+
+# GCS_BUCKET_NAME=academic-library-documents
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+
+# DATABASE_URL=postgresql://user:password@localhost:5432/academic_library
+# DATABASE_POOL_SIZE=20
+
+# MEILISEARCH_HOST=http://localhost:7700
+# MEILISEARCH_API_KEY=your_master_key
+
+# REDIS_URL=redis://localhost:6379/0
+
+# SENTRY_DSN=https://your-sentry-dsn
+
+# MAX_FILE_SIZE_MB=50
+# ALLOWED_EXTENSIONS=pdf
+# WATERMARK_TEXT="Bibliothèque Académique"
+
+# ============================================
+# SCRIPTS PYTHON UTILITAIRES
+# ============================================
+
+# Ces dépendances Python sont utilisées pour :
+# 
+# 1. Scripts de traitement PDF :
+#    - Ajout de filigrane automatique
+#    - Extraction de métadonnées
+#    - Validation de fichiers
+#    - Conversion et optimisation
+#
+# 2. Tâches planifiées (Celery) :
+#    - Traitement asynchrone des uploads
+#    - Indexation dans Meilisearch
+#    - Génération de miniatures
+#    - Analyse anti-plagiat
+#
+# 3. Scripts d'administration :
+#    - Migration de données
+#    - Statistiques et rapports
+#    - Maintenance de la base de données
+#    - Backup automatique
+#
+# 4. Analyse de contenu :
+#    - Extraction de texte (OCR)
+#    - Analyse de similarité
+#    - Classification automatique
+#    - Détection de mots-clés
+
+# ============================================
+# STACK TECHNIQUE COMPLÈTE
+# ============================================
+
+# Frontend:
+#   - Next.js 14+ (App Router)
+#   - TypeScript
+#   - Tailwind CSS
+#   - shadcn/ui
+#   - React Query / SWR
+#   - Zustand / Jotai
+#   - PDF.js pour la lecture sécurisée
+#
+# Backend:
+#   - NestJS 10+ (Node.js/TypeScript)
+#   - Prisma ORM
+#   - JWT Authentication
+#   - Passport.js
+#   - Class Validator
+#   - Swagger/OpenAPI
+#
+# Base de données:
+#   - PostgreSQL 15+
+#   - Extensions: pg_trgm (recherche floue), uuid-ossp
+#
+# Recherche:
+#   - Meilisearch (open source) ou Algolia (commercial)
+#
+# Stockage:
+#   - AWS S3 (recommandé) ou Google Cloud Storage
+#   - CloudFront CDN (pour S3)
+#
+# Cache et Files:
+#   - Redis
+#   - Bull Queue (pour NestJS)
+#
+# Monitoring:
+#   - Sentry (erreurs)
+#   - Prometheus + Grafana (métriques)
+#   - Winston (logs)
+
+# ============================================
+# ARCHITECTURE DES SCRIPTS PYTHON
+# ============================================
+
+# /scripts/
+#   ├── pdf_processor.py          # Traitement PDF principal
+#   ├── watermark_generator.py    # Ajout de filigrane
+#   ├── metadata_extractor.py     # Extraction métadonnées
+#   ├── s3_uploader.py            # Upload vers S3
+#   ├── search_indexer.py         # Indexation Meilisearch
+#   ├── plagiarism_checker.py     # Détection plagiat
+#   ├── ocr_processor.py          # OCR pour PDF scannés
+#   ├── stats_generator.py        # Génération statistiques
+#   ├── db_backup.py              # Backup PostgreSQL
+#   └── cli.py                    # Interface CLI
+
+# /tasks/ (Celery)
+#   ├── pdf_tasks.py              # Tâches async PDF
+#   ├── search_tasks.py           # Tâches async recherche
+#   └── notification_tasks.py     # Notifications email
+
+# ============================================
+# UTILISATION TYPIQUE
+# ============================================
+
+# Traiter un PDF avec filigrane :
+# python scripts/pdf_processor.py --input document.pdf --watermark --output processed.pdf
+
+# Indexer tous les documents dans Meilisearch :
+# python scripts/search_indexer.py --reindex-all
+
+# Générer des statistiques mensuelles :
+# python scripts/stats_generator.py --month 2025-01
+
+# Backup de la base de données :
+# python scripts/db_backup.py --s3-upload
+
+# Démarrer le worker Celery :
+# celery -A tasks worker --loglevel=info
+
+# ============================================
+# DÉPLOIEMENT
+# ============================================
+
+# Production (gunicorn pour scripts API) :
+# gunicorn==21.2.0
+
+# Docker :
+# Voir Dockerfile fourni séparément
+
+# Supervisor (gestion processus Celery) :
+# supervisor==4.2.5
+
+# ============================================
+# VERSIONS
+# ============================================
+
+# Python: 3.11+
+# Node.js: 20+ LTS
+# PostgreSQL: 15+
+# Redis: 7+
+# Meilisearch: 1.5+
+
+# ============================================
+# SÉCURITÉ
+# ============================================
+
+# Audit de sécurité :
+# pip install safety
+# safety check -r requirements.txt
+
+# Mise à jour des vulnérabilités :
+# pip install --upgrade pip setuptools wheel
+# pip install --upgrade -r requirements.txt
+
+# ============================================
+# PERFORMANCE
+# ============================================
+
+# Pour améliorer les performances :
+# - Utiliser uvloop pour asyncio
+# - Activer le cache Redis
+# - Utiliser des workers Celery multiples
+# - Configurer connection pooling PostgreSQL
+# - Utiliser CDN pour le stockage
+
+# uvloop==0.19.0  # Décommenter si besoin
+
+# ============================================
+# LICENCE & AUTEUR
+# ============================================
+
+# Projet: Bibliothèque Numérique Académique
+# Stack: Next.js + NestJS + PostgreSQL + Meilisearch
+# Version: 1.0.0
+# Python: 3.11+
+# Licence: À définir selon vos besoins

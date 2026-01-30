@@ -1,0 +1,2176 @@
+================================================================================
+BIBLIOTHÈQUE NUMÉRIQUE ACADÉMIQUE
+Contexte du Projet - Spécifications Techniques Complètes
+================================================================================
+
+VERSION: 1.0.0
+DATE: Janvier 2025
+STATUT: Spécifications Initiales
+PRIORITÉ: Haute
+
+================================================================================
+1. PRÉSENTATION DU PROJET
+================================================================================
+
+1.1 OBJECTIF GÉNÉRAL
+--------------------
+Développer une plateforme web moderne de consultation publique de rapports de 
+stage et mémoires académiques, accessible sans authentification, avec un 
+système de lecture sécurisée empêchant le téléchargement non autorisé.
+
+1.2 MISSION
+-----------
+Offrir aux étudiants, chercheurs et au grand public un accès libre et gratuit 
+à un catalogue de travaux académiques (mémoires, thèses, rapports de stage) 
+pour consultation en ligne uniquement, dans un environnement sécurisé et 
+professionnel.
+
+1.3 VALEUR AJOUTÉE
+------------------
+- ✅ Démocratisation de l'accès aux travaux académiques
+- ✅ Protection des droits d'auteur (lecture seule)
+- ✅ Valorisation des productions estudiantines
+- ✅ Aide à la recherche documentaire
+- ✅ Inspiration pour les nouveaux étudiants
+- ✅ Rayonnement de l'établissement
+
+1.4 CIBLE UTILISATEURS
+----------------------
+┌─────────────────────┬──────────────────────────────────────────────────┐
+│ Type d'utilisateur  │ Besoins                                          │
+├─────────────────────┼──────────────────────────────────────────────────┤
+│ Visiteurs publics   │ Consulter, rechercher, lire en ligne            │
+│ Étudiants           │ S'inspirer, rechercher des sujets               │
+│ Enseignants         │ Orienter les étudiants, vérifier les sources    │
+│ Chercheurs          │ Documentation, état de l'art                     │
+│ Administrateurs     │ Dépôt, validation, modération, statistiques      │
+└─────────────────────┴──────────────────────────────────────────────────┘
+
+================================================================================
+2. STACK TECHNIQUE RETENUE
+================================================================================
+
+2.1 ARCHITECTURE GLOBALE
+------------------------
+Architecture: Three-tier (Frontend / Backend / Database)
+Type: Application Web Progressive (PWA capable)
+Déploiement: Cloud-native (conteneurs Docker)
+
+2.2 FRONTEND
+------------
+Framework: Next.js 14+ (React 18+)
+  Justification: 
+    - SEO optimisé pour indexer les titres/métadonnées
+    - Server-Side Rendering (SSR) pour performance
+    - App Router pour navigation moderne
+    - Image optimization intégrée
+    
+Language: TypeScript 5+
+  Justification: Typage fort, meilleure maintenabilité
+
+Styling: Tailwind CSS 3+
+  Justification: 
+    - Développement rapide
+    - Design system cohérent
+    - Performance optimale (PurgeCSS)
+
+Composants UI: shadcn/ui
+  Justification:
+    - Composants accessibles (A11y)
+    - Personnalisables
+    - Basés sur Radix UI
+
+State Management: Zustand ou Jotai
+  Justification: Léger, simple, performant
+
+Data Fetching: React Query (TanStack Query)
+  Justification:
+    - Cache intelligent
+    - Gestion des états de chargement
+    - Synchronisation automatique
+
+Lecteur PDF: PDF.js (Mozilla)
+  Justification:
+    - Open source, robuste
+    - Personnalisable pour désactiver téléchargement
+    - Compatible tous navigateurs
+
+2.3 BACKEND
+-----------
+Framework: NestJS 10+ (Node.js/TypeScript)
+  Justification:
+    - Architecture modulaire et scalable
+    - TypeScript natif
+    - Intégration facile avec PostgreSQL
+    - Écosystème riche (Passport, JWT, etc.)
+    - Pattern MVC rigoureux
+
+Alternative: FastAPI (Python 3.11+)
+  Si besoins IA/ML: 
+    - Traitement de texte avancé
+    - Anti-plagiat
+    - OCR
+    - Classification automatique
+
+ORM: Prisma
+  Justification:
+    - Type-safe
+    - Migrations automatiques
+    - Studio GUI intégré
+    - Excellent DX (Developer Experience)
+
+API: RESTful + GraphQL (optionnel)
+  Justification:
+    - REST pour CRUD simple
+    - GraphQL pour requêtes complexes/recherche
+
+Documentation: Swagger/OpenAPI
+  Justification: Auto-génération de la doc API
+
+2.4 BASE DE DONNÉES
+-------------------
+SGBD: PostgreSQL 15+
+  Justification:
+    - Fiabilité éprouvée
+    - Relations complexes (auteurs, tuteurs, catégories)
+    - Full-text search natif (pg_trgm)
+    - JSON support pour métadonnées flexibles
+    - Extensions puissantes
+    - Open source
+
+Extensions recommandées:
+  - pg_trgm: Recherche floue (fuzzy search)
+  - uuid-ossp: Génération d'UUID
+  - citext: Colonnes case-insensitive
+  - pgcrypto: Cryptographie
+
+Schéma de données: Voir section 4
+
+2.5 MOTEUR DE RECHERCHE
+-----------------------
+Solution: Meilisearch (open source) ⭐ RECOMMANDÉ
+  Justification:
+    - Ultra rapide (<50ms)
+    - Recherche "fuzzy" tolérante aux fautes
+    - Filtres et facettes avancés
+    - Multilingue (FR/EN)
+    - Typo-tolerance
+    - Auto-hébergeable
+    - Gratuit et open source
+
+Alternative: Algolia (SaaS payant)
+  Si budget disponible:
+    - Encore plus rapide
+    - Analytics intégrées
+    - Support commercial
+
+2.6 STOCKAGE DE FICHIERS
+-------------------------
+Solution: AWS S3 (Amazon Simple Storage Service) ⭐ RECOMMANDÉ
+  Justification:
+    - Scalabilité illimitée
+    - Haute disponibilité (99.99%)
+    - Coût optimisé (pay-as-you-go)
+    - Intégration CloudFront (CDN)
+    - Versioning natif
+    - Sécurité robuste (IAM, encryption)
+
+Configuration:
+  - Bucket privé (pas d'accès public direct)
+  - URL signées temporaires pour lecture
+  - Lifecycle policies (archivage automatique)
+  - Encryption at rest (AES-256)
+  - Cross-region replication (backup)
+
+Alternative: Google Cloud Storage
+  Justification similaire à S3
+
+⚠️ RÈGLE CRITIQUE: 
+Jamais de stockage PDF sur le serveur web/backend !
+Toujours utiliser un service cloud dédié.
+
+2.7 CACHE ET FILES D'ATTENTE
+-----------------------------
+Cache: Redis 7+
+  Justification:
+    - Cache de sessions
+    - Cache de requêtes fréquentes
+    - Rate limiting
+    - Pub/Sub pour notifications
+
+Queue: Bull (BullMQ)
+  Justification:
+    - Tâches asynchrones (traitement PDF, OCR)
+    - Retry automatique
+    - Monitoring intégré
+    - Compatible Redis
+
+2.8 AUTHENTIFICATION (Administrateurs uniquement)
+--------------------------------------------------
+Méthode: JWT (JSON Web Tokens)
+  Justification:
+    - Stateless
+    - Scalable
+    - Standard industrie
+
+Framework: Passport.js
+  Stratégies:
+    - Local (email/password)
+    - OAuth2 (Google, Microsoft - optionnel)
+
+Sécurité:
+  - Bcrypt pour hash des mots de passe
+  - Refresh tokens
+  - Rate limiting sur login
+  - CSRF protection
+
+2.9 MONITORING ET LOGS
+-----------------------
+Erreurs: Sentry
+  Justification:
+    - Tracking erreurs temps réel
+    - Stack traces détaillées
+    - Alertes automatiques
+
+Logs: Winston (NestJS)
+  Justification:
+    - Niveaux de logs configurables
+    - Rotation automatique
+    - Multiple transports
+
+Métriques: Prometheus + Grafana (optionnel)
+  Justification:
+    - Monitoring performance
+    - Dashboards visuels
+    - Alerting
+
+2.10 CI/CD ET DÉPLOIEMENT
+--------------------------
+Conteneurisation: Docker + Docker Compose
+  Justification:
+    - Environnements reproductibles
+    - Déploiement simplifié
+    - Isolation des services
+
+Orchestration: Kubernetes (pour production à grande échelle)
+  Alternative: Docker Swarm (plus simple)
+
+CI/CD: GitHub Actions ou GitLab CI
+  Justification:
+    - Tests automatiques
+    - Déploiement automatique
+    - Quality gates
+
+Hébergement recommandé:
+  - AWS (EC2, RDS, S3, CloudFront)
+  - Google Cloud Platform
+  - DigitalOcean (plus économique)
+  - Vercel (pour Next.js) + Backend séparé
+
+================================================================================
+3. FONCTIONNALITÉS DÉTAILLÉES
+================================================================================
+
+3.1 ACCÈS ET CONSULTATION (PUBLIC)
+-----------------------------------
+✅ F1.1 - Accès sans authentification
+  - Page d'accueil publique
+  - Navigation libre dans le catalogue
+  - Pas de création de compte requise
+  - Pas de paywall
+
+✅ F1.2 - Lecture en ligne sécurisée
+  - Lecteur PDF.js intégré
+  - Désactivation du clic droit
+  - Désactivation de l'impression
+  - Désactivation du téléchargement
+  - Blocage de la sélection de texte
+  - Filigrane dynamique affiché
+  - Mode plein écran disponible
+
+✅ F1.3 - Navigation intuitive
+  - Zoom avant/arrière
+  - Navigation page par page
+  - Indicateur de progression
+  - Miniatures des pages (optionnel)
+  - Recherche de texte dans le document
+  - Signets automatiques (si présents dans PDF)
+
+3.2 GESTION DES DOCUMENTS (ADMIN)
+----------------------------------
+✅ F2.1 - Dépôt de documents
+  - Upload par formulaire web
+  - Drag & drop
+  - Validation format (PDF uniquement)
+  - Validation taille (max 50MB par défaut)
+  - Vérification intégrité fichier
+  - Extraction automatique métadonnées (si présentes)
+
+✅ F2.2 - Workflow de validation
+  États possibles:
+    1. Brouillon (draft) - Non visible public
+    2. En attente (pending) - Soumis pour validation
+    3. Validé (approved) - Visible public
+    4. Rejeté (rejected) - Non publié avec raison
+    5. Archivé (archived) - Plus visible mais conservé
+
+  Actions admin:
+    - Approuver
+    - Rejeter avec commentaire
+    - Demander modification
+    - Archiver
+    - Supprimer définitivement
+
+✅ F2.3 - Modification métadonnées
+  - Édition complète des métadonnées
+  - Correction d'erreurs
+  - Ajout de mots-clés
+  - Modification du résumé
+  - Changement de catégorie
+
+✅ F2.4 - Suppression
+  - Soft delete (par défaut)
+  - Hard delete (avec confirmation)
+  - Historique des suppressions
+  - Possibilité de restauration (soft delete)
+
+3.3 MÉTADONNÉES OBLIGATOIRES
+-----------------------------
+📋 Pour chaque document déposé:
+
+M1. AUTEUR
+  - Nom (required, string, max 100 caractères)
+  - Prénom (required, string, max 100 caractères)
+  - Email (optionnel, string, format email)
+  - Photo (optionnel, URL)
+
+M2. DOCUMENT
+  - Titre (required, string, max 500 caractères)
+  - Résumé (required, text, min 100, max 5000 caractères)
+  - Mots-clés (required, array, min 3, max 10)
+  - Langue (required, enum: FR, EN, ES, AR, etc.)
+  - Nombre de pages (auto-extrait du PDF)
+
+M3. ACADÉMIQUE
+  - Année académique (required, string, format: "2023-2024")
+  - Date de soutenance (required, date)
+  - Établissement (required, string, liste prédéfinie)
+  - Faculté/Institut (required, string, liste prédéfinie)
+  - Département (optionnel, string)
+  - Classe/Niveau (required, string, ex: "Master 2")
+  - Cycle (required, enum: Licence, Master, Doctorat, BTS, DUT, etc.)
+  - Filière/Spécialité (required, string, ex: "Informatique")
+  - Sous-filière (optionnel, string, ex: "Intelligence Artificielle")
+
+M4. ENCADREMENT
+  - Encadreur académique (required)
+    - Nom (required, string)
+    - Prénom (required, string)
+    - Grade (required, enum: Professeur, Maître de conférences, etc.)
+    - Email (optionnel)
+  - Co-encadreur (optionnel, mêmes champs)
+  - Tuteur entreprise (optionnel, pour stages)
+    - Nom
+    - Prénom
+    - Entreprise
+    - Poste
+
+M5. CLASSIFICATION
+  - Domaine principal (required, liste prédéfinie)
+  - Sous-domaine (optionnel)
+  - Type de document (required, enum: Mémoire, Thèse, Rapport de stage, PFE)
+  - Confidentialité (required, boolean, default: false)
+  - Embargo (optionnel, date de fin si confidentiel)
+
+M6. FICHIER
+  - Nom fichier original (auto-rempli)
+  - Taille fichier (auto-rempli)
+  - Hash SHA-256 (auto-calculé, pour intégrité)
+  - URL S3 (auto-rempli)
+  - URL signée temporaire (généré à la demande)
+  - Date d'upload (auto-rempli)
+  - Uploadé par (admin_id, auto-rempli)
+
+M7. STATISTIQUES (auto-calculées)
+  - Nombre de vues
+  - Nombre de recherches le mentionnant
+  - Dernière consultation
+  - Score de popularité
+
+3.4 RECHERCHE AVANCÉE (PUBLIC)
+-------------------------------
+✅ F4.1 - Recherche full-text
+  - Recherche dans titres, résumés, mots-clés
+  - Tolérance aux fautes (fuzzy search)
+  - Recherche multilingue
+  - Auto-complétion
+  - Suggestions de recherche
+  - Correction orthographique
+
+✅ F4.2 - Filtres multicritères
+  Filtres disponibles:
+    □ Cycle (Licence, Master, Doctorat, etc.)
+    □ Filière/Spécialité (liste déroulante)
+    □ Établissement (checkbox multiple)
+    □ Faculté (checkbox multiple)
+    □ Année académique (plage ou sélection multiple)
+    □ Auteur (recherche autocomplete)
+    □ Encadreur (recherche autocomplete)
+    □ Langue (checkbox)
+    □ Type de document (checkbox)
+    □ Mots-clés (tags cliquables)
+    □ Date de soutenance (plage de dates)
+
+✅ F4.3 - Tri des résultats
+  Options de tri:
+    - Pertinence (par défaut)
+    - Date de soutenance (récent → ancien)
+    - Date de soutenance (ancien → récent)
+    - Popularité (nombre de vues)
+    - Titre (A → Z)
+    - Auteur (A → Z)
+
+✅ F4.4 - Affichage des résultats
+  - Vue liste (par défaut)
+  - Vue grille (optionnel)
+  - Pagination (20 résultats par page)
+  - Lazy loading (scroll infini optionnel)
+  - Highlighting des termes recherchés
+  - Miniature première page PDF (optionnel)
+
+✅ F4.5 - Facettes de recherche
+  Affichage de:
+    - Nombre de résultats par cycle
+    - Nombre de résultats par filière
+    - Nombre de résultats par année
+    - Nuage de mots-clés populaires
+
+3.5 NAVIGATION ET DÉCOUVERTE
+-----------------------------
+✅ F5.1 - Page d'accueil
+  - Recherche rapide
+  - Documents récents (10 derniers)
+  - Documents populaires (top 10)
+  - Parcourir par cycle
+  - Parcourir par filière
+  - Statistiques globales (nombre total de documents)
+
+✅ F5.2 - Page de détail d'un document
+  Sections:
+    - Métadonnées complètes
+    - Résumé
+    - Mots-clés (cliquables pour recherche)
+    - Informations auteur
+    - Informations encadrement
+    - Bouton "Lire en ligne"
+    - Documents similaires (recommandations)
+    - Statistiques (vues)
+    - Bouton "Signaler un problème"
+
+✅ F5.3 - Parcourir par catégorie
+  - Page par cycle (tous les documents du cycle)
+  - Page par filière
+  - Page par établissement
+  - Page par année
+  - Filtres toujours disponibles
+
+✅ F5.4 - Breadcrumbs
+  Navigation contextuelle:
+    Accueil > Cycle > Filière > Document
+
+3.6 SÉCURITÉ ET PROTECTION
+---------------------------
+✅ F6.1 - Protection du contenu
+  - Lecteur PDF custom (pas de PDF natif navigateur)
+  - Désactivation JavaScript dans PDF
+  - Blocage extensions navigateur (tentative)
+  - URL signées temporaires (expiration 1h)
+  - Filigrane dynamique overlay:
+      Format: "Bibliothèque [Nom] - Consulté le [Date] - [IP]"
+      Position: Diagonale ou bas de page
+      Opacité: 30%
+      Couleur: Gris clair
+
+✅ F6.2 - Rate limiting
+  - Limitation requêtes API (100/min par IP)
+  - Limitation lectures (10 documents/jour sans compte)
+  - Protection anti-scraping
+  - Captcha si comportement suspect
+
+✅ F6.3 - Protection anti-indexation abusive
+  - Robots.txt configuré
+  - Meta noindex sur lecteur PDF
+  - User-agent detection
+  - Blocage bots connus (configurable)
+
+✅ F6.4 - Intégrité des fichiers
+  - Vérification hash SHA-256 à l'upload
+  - Scan antivirus (ClamAV recommandé)
+  - Validation stricte format PDF
+  - Rejet des PDF corrompus ou malformés
+
+✅ F6.5 - Sécurité backend
+  - HTTPS obligatoire (TLS 1.3)
+  - CORS configuré
+  - CSRF protection
+  - SQL injection prevention (ORM)
+  - XSS protection
+  - Headers de sécurité (Helmet.js)
+
+3.7 RÔLES ET PERMISSIONS
+-------------------------
+👤 VISITEUR PUBLIC (non authentifié)
+  Permissions:
+    ✅ Consulter le catalogue
+    ✅ Rechercher
+    ✅ Lire les documents validés
+    ✅ Voir les métadonnées publiques
+    ❌ Déposer des documents
+    ❌ Télécharger
+    ❌ Imprimer
+    ❌ Accéder au backoffice
+
+👨‍💼 ADMINISTRATEUR
+  Permissions:
+    ✅ Toutes les permissions visiteur
+    ✅ Accéder au dashboard admin
+    ✅ Déposer des documents
+    ✅ Éditer les métadonnées
+    ✅ Valider/Rejeter les documents
+    ✅ Supprimer des documents
+    ✅ Voir les statistiques complètes
+    ✅ Gérer les utilisateurs admin
+    ✅ Exporter les données
+    ✅ Configurer la plateforme
+
+👨‍💼 SUPER ADMINISTRATEUR (optionnel)
+  Permissions:
+    ✅ Toutes les permissions admin
+    ✅ Gérer les rôles
+    ✅ Accéder aux logs système
+    ✅ Configurer la sécurité
+    ✅ Gérer les backups
+    ✅ Accéder à la base de données
+
+3.8 STATISTIQUES ET ANALYTICS
+------------------------------
+✅ F8.1 - Dashboard administrateur
+  Métriques affichées:
+    - Nombre total de documents
+    - Nombre de documents par statut
+    - Nombre de vues aujourd'hui/semaine/mois
+    - Top 10 documents consultés
+    - Top 10 recherches
+    - Nombre de visiteurs uniques
+    - Graphiques de tendances
+    - Documents récemment ajoutés
+    - Documents en attente de validation
+
+✅ F8.2 - Analytics par document
+  Pour chaque document:
+    - Nombre de vues total
+    - Vues par période (jour/semaine/mois)
+    - Durée moyenne de consultation
+    - Provenance des visiteurs (pays/ville)
+    - Recherches ayant mené au document
+
+✅ F8.3 - Rapports exportables
+  Formats:
+    - PDF
+    - Excel (XLSX)
+    - CSV
+    - JSON
+
+  Types de rapports:
+    - Rapport mensuel global
+    - Rapport par filière
+    - Rapport par établissement
+    - Rapport par année académique
+
+✅ F8.4 - Respect de la vie privée
+  - Anonymisation des IPs
+  - Pas de cookies tiers
+  - Conformité RGPD
+  - Politique de confidentialité claire
+  - Bannière de consentement cookies
+
+================================================================================
+4. MODÈLE DE BASE DE DONNÉES (PostgreSQL)
+================================================================================
+
+4.1 SCHÉMA CONCEPTUEL
+---------------------
+
+Entités principales:
+  - users (administrateurs)
+  - documents
+  - authors
+  - supervisors
+  - institutions
+  - faculties
+  - fields (filières)
+  - cycles
+  - keywords
+  - document_views (statistiques)
+  - search_queries (historique recherches)
+
+4.2 TABLES DÉTAILLÉES
+----------------------
+
+TABLE: users (Administrateurs)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ Colonne              │ Type         │ Contraintes                │
+├──────────────────────┼──────────────┼────────────────────────────┤
+│ id                   │ UUID         │ PRIMARY KEY, DEFAULT uuid  │
+│ email                │ VARCHAR(255) │ UNIQUE, NOT NULL           │
+│ password_hash        │ VARCHAR(255) │ NOT NULL                   │
+│ first_name           │ VARCHAR(100) │ NOT NULL                   │
+│ last_name            │ VARCHAR(100) │ NOT NULL                   │
+│ role                 │ ENUM         │ admin, super_admin         │
+│ is_active            │ BOOLEAN      │ DEFAULT true               │
+│ last_login           │ TIMESTAMP    │                            │
+│ created_at           │ TIMESTAMP    │ DEFAULT NOW()              │
+│ updated_at           │ TIMESTAMP    │ DEFAULT NOW()              │
+└──────────────────────┴──────────────┴────────────────────────────┘
+
+TABLE: institutions (Établissements)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ id                   │ UUID         │ PRIMARY KEY                │
+│ name                 │ VARCHAR(255) │ UNIQUE, NOT NULL           │
+│ acronym              │ VARCHAR(20)  │                            │
+│ country              │ VARCHAR(100) │ DEFAULT 'France'           │
+│ city                 │ VARCHAR(100) │                            │
+│ website              │ VARCHAR(255) │                            │
+│ logo_url             │ VARCHAR(255) │                            │
+│ created_at           │ TIMESTAMP    │ DEFAULT NOW()              │
+└──────────────────────┴──────────────┴────────────────────────────┘
+
+TABLE: faculties (Facultés/Instituts)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ id                   │ UUID         │ PRIMARY KEY                │
+│ institution_id       │ UUID         │ FOREIGN KEY, NOT NULL      │
+│ name                 │ VARCHAR(255) │ NOT NULL                   │
+│ acronym              │ VARCHAR(20)  │                            │
+│ created_at           │ TIMESTAMP    │ DEFAULT NOW()              │
+└──────────────────────┴──────────────┴────────────────────────────┘
+INDEX: idx_faculties_institution ON faculties(institution_id)
+
+TABLE: fields (Filières)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ id                   │ UUID         │ PRIMARY KEY                │
+│ faculty_id           │ UUID         │ FOREIGN KEY, NOT NULL      │
+│ name                 │ VARCHAR(255) │ NOT NULL                   │
+│ slug                 │ VARCHAR(255) │ UNIQUE                     │
+│ description          │ TEXT         │                            │
+│ created_at           │ TIMESTAMP    │ DEFAULT NOW()              │
+└──────────────────────┴──────────────┴────────────────────────────┘
+INDEX: idx_fields_faculty ON fields(faculty_id)
+
+TABLE: cycles
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ id                   │ UUID         │ PRIMARY KEY                │
+│ name                 │ VARCHAR(100) │ UNIQUE, NOT NULL           │
+│ level                │ INTEGER      │ (1=License, 2=Master, etc.)│
+│ slug                 │ VARCHAR(100) │ UNIQUE                     │
+└──────────────────────┴──────────────┴────────────────────────────┘
+Valeurs typiques: Licence, Master, Doctorat, BTS, DUT, Ingénieur
+
+TABLE: authors (Auteurs)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ id                   │ UUID         │ PRIMARY KEY                │
+│ first_name           │ VARCHAR(100) │ NOT NULL                   │
+│ last_name            │ VARCHAR(100) │ NOT NULL                   │
+│ email                │ VARCHAR(255) │                            │
+│ photo_url            │ VARCHAR(255) │                            │
+│ created_at           │ TIMESTAMP    │ DEFAULT NOW()              │
+└──────────────────────┴──────────────┴────────────────────────────┘
+INDEX: idx_authors_name ON authors(last_name, first_name)
+
+TABLE: supervisors (Encadreurs)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ id                   │ UUID         │ PRIMARY KEY                │
+│ first_name           │ VARCHAR(100) │ NOT NULL                   │
+│ last_name            │ VARCHAR(100) │ NOT NULL                   │
+│ email                │ VARCHAR(255) │                            │
+│ title                │ VARCHAR(100) │ (Professeur, Dr, etc.)     │
+│ institution_id       │ UUID         │ FOREIGN KEY                │
+│ created_at           │ TIMESTAMP    │ DEFAULT NOW()              │
+└──────────────────────┴──────────────┴────────────────────────────┘
+INDEX: idx_supervisors_name ON supervisors(last_name, first_name)
+
+TABLE: documents (Documents académiques)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ id                   │ UUID         │ PRIMARY KEY                │
+│ title                │ VARCHAR(500) │ NOT NULL                   │
+│ slug                 │ VARCHAR(500) │ UNIQUE                     │
+│ abstract             │ TEXT         │ NOT NULL                   │
+│ language             │ VARCHAR(5)   │ DEFAULT 'fr'               │
+│ page_count           │ INTEGER      │                            │
+│ document_type        │ ENUM         │ memoir, thesis, internship │
+│ academic_year        │ VARCHAR(20)  │ NOT NULL (ex: 2023-2024)   │
+│ defense_date         │ DATE         │ NOT NULL                   │
+│ author_id            │ UUID         │ FOREIGN KEY, NOT NULL      │
+│ institution_id       │ UUID         │ FOREIGN KEY, NOT NULL      │
+│ faculty_id           │ UUID         │ FOREIGN KEY, NOT NULL      │
+│ field_id             │ UUID         │ FOREIGN KEY, NOT NULL      │
+│ cycle_id             │ UUID         │ FOREIGN KEY, NOT NULL      │
+│ main_supervisor_id   │ UUID         │ FOREIGN KEY, NOT NULL      │
+│ co_supervisor_id     │ UUID         │ FOREIGN KEY (nullable)     │
+│ file_name            │ VARCHAR(255) │ NOT NULL                   │
+│ file_size            │ BIGINT       │ NOT NULL (bytes)           │
+│ file_hash            │ VARCHAR(64)  │ NOT NULL (SHA-256)         │
+│ s3_key               │ VARCHAR(500) │ NOT NULL                   │
+│ s3_bucket            │ VARCHAR(100) │ NOT NULL                   │
+│ status               │ ENUM         │ draft, pending, approved,  │
+│                      │              │ rejected, archived         │
+│ is_confidential      │ BOOLEAN      │ DEFAULT false              │
+│ embargo_until        │ DATE         │ (nullable)                 │
+│ rejection_reason     │ TEXT         │ (nullable)                 │
+│ view_count           │ INTEGER      │ DEFAULT 0                  │
+│ popularity_score     │ FLOAT        │ DEFAULT 0.0                │
+│ uploaded_by          │ UUID         │ FOREIGN KEY (users)        │
+│ approved_by          │ UUID         │ FOREIGN KEY (users)        │
+│ approved_at          │ TIMESTAMP    │                            │
+│ created_at           │ TIMESTAMP    │ DEFAULT NOW()              │
+│ updated_at           │ TIMESTAMP    │ DEFAULT NOW()              │
+│ last_viewed_at       │ TIMESTAMP    │                            │
+└──────────────────────┴──────────────┴────────────────────────────┘
+
+INDEXES sur documents:
+  - idx_documents_status ON documents(status)
+  - idx_documents_author ON documents(author_id)
+  - idx_documents_field ON documents(field_id)
+  - idx_documents_cycle ON documents(cycle_id)
+  - idx_documents_year ON documents(academic_year)
+  - idx_documents_created ON documents(created_at DESC)
+  - idx_documents_views ON documents(view_count DESC)
+  - idx_documents_fulltext ON documents USING GIN(to_tsvector('french', title || ' ' || abstract))
+
+TABLE: keywords (Mots-clés)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ id                   │ UUID         │ PRIMARY KEY                │
+│ keyword              │ VARCHAR(100) │ UNIQUE, NOT NULL           │
+│ slug                 │ VARCHAR(100) │ UNIQUE                     │
+│ usage_count          │ INTEGER      │ DEFAULT 0                  │
+│ created_at           │ TIMESTAMP    │ DEFAULT NOW()              │
+└──────────────────────┴──────────────┴────────────────────────────┘
+INDEX: idx_keywords_usage ON keywords(usage_count DESC)
+
+TABLE: document_keywords (Table de liaison Many-to-Many)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ document_id          │ UUID         │ FOREIGN KEY, NOT NULL      │
+│ keyword_id           │ UUID         │ FOREIGN KEY, NOT NULL      │
+└──────────────────────┴──────────────┴────────────────────────────┘
+PRIMARY KEY: (document_id, keyword_id)
+INDEXES:
+  - idx_doc_keywords_doc ON document_keywords(document_id)
+  - idx_doc_keywords_kw ON document_keywords(keyword_id)
+
+TABLE: document_views (Statistiques de consultation)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ id                   │ UUID         │ PRIMARY KEY                │
+│ document_id          │ UUID         │ FOREIGN KEY, NOT NULL      │
+│ viewer_ip            │ INET         │ (anonymisé après 30j)      │
+│ viewer_country       │ VARCHAR(50)  │                            │
+│ viewer_city          │ VARCHAR(100) │                            │
+│ user_agent           │ TEXT         │                            │
+│ referrer             │ VARCHAR(255) │                            │
+│ session_duration     │ INTEGER      │ (secondes)                 │
+│ viewed_at            │ TIMESTAMP    │ DEFAULT NOW()              │
+└──────────────────────┴──────────────┴────────────────────────────┘
+INDEXES:
+  - idx_views_document ON document_views(document_id)
+  - idx_views_date ON document_views(viewed_at DESC)
+  
+PARTITION BY: viewed_at (par mois) pour performance
+
+TABLE: search_queries (Historique de recherche)
+┌──────────────────────┬──────────────┬────────────────────────────┐
+│ id                   │ UUID         │ PRIMARY KEY                │
+│ query                │ VARCHAR(500) │ NOT NULL                   │
+│ filters              │ JSONB        │ (filtres appliqués)        │
+│ results_count        │ INTEGER      │                            │
+│ clicked_document_id  │ UUID         │ FOREIGN KEY (nullable)     │
+│ searcher_ip          │ INET         │ (anonymisé après 30j)      │
+│ searched_at          │ TIMESTAMP    │ DEFAULT NOW()              │
+└──────────────────────┴──────────────┴────────────────────────────┘
+INDEX: idx_search_query ON search_queries(query)
+
+4.3 RELATIONS
+-------------
+
+authors ←──── documents (1:N)
+  Un auteur peut avoir plusieurs documents
+
+supervisors ←──── documents (1:N) 
+  Un encadreur peut superviser plusieurs documents
+
+institutions ←──── faculties (1:N)
+  Une institution a plusieurs facultés
+
+faculties ←──── fields (1:N)
+  Une faculté a plusieurs filières
+
+documents ←──→ keywords (N:N via document_keywords)
+  Un document a plusieurs mots-clés
+  Un mot-clé peut être dans plusieurs documents
+
+users (uploadé_by) ←──── documents (1:N)
+  Un admin peut uploader plusieurs documents
+
+users (approved_by) ←──── documents (1:N)
+  Un admin peut approuver plusieurs documents
+
+documents ←──── document_views (1:N)
+  Un document peut avoir plusieurs vues
+
+4.4 RÈGLES DE GESTION
+----------------------
+
+RG1: Un document ne peut être visible publiquement que si status = 'approved'
+RG2: Un document confidentiel ne peut être consulté qu'après embargo_until
+RG3: file_hash doit être unique pour éviter les doublons
+RG4: view_count s'incrémente à chaque consultation unique (1 vue/IP/jour)
+RG5: popularity_score calculé avec: (view_count * 0.7) + (age_factor * 0.3)
+RG6: Les IPs dans document_views sont anonymisées après 30 jours (RGPD)
+RG7: search_queries conservées 90 jours puis supprimées
+RG8: Soft delete sur documents (status = 'archived') par défaut
+RG9: Hard delete uniquement par super_admin avec confirmation
+
+================================================================================
+5. SÉCURITÉ ET PROTECTION DU CONTENU
+================================================================================
+
+5.1 STRATÉGIE DE PROTECTION PDF
+--------------------------------
+
+Niveau 1: Protection côté client (Frontend)
+  ✅ Utilisation de PDF.js custom
+  ✅ Canvas rendering (pas de <iframe> natif)
+  ✅ Désactivation du menu contextuel (clic droit)
+  ✅ Désactivation des raccourcis clavier (Ctrl+P, Ctrl+S)
+  ✅ Désactivation de la sélection de texte (user-select: none)
+  ✅ Overlay transparent sur le canvas pour bloquer interactions
+  ✅ Détection des DevTools (tentative)
+  ✅ Filigrane dynamique en overlay CSS
+
+Niveau 2: Protection côté serveur (Backend)
+  ✅ URL signées temporaires (JWT expiration 1h)
+  ✅ Validation du token à chaque requête
+  ✅ Rate limiting par IP (max 10 docs/heure)
+  ✅ Logging de toutes les consultations
+  ✅ Blocage des bots connus (User-Agent)
+  ✅ CORS restrictif
+
+Niveau 3: Protection du stockage (S3)
+  ✅ Bucket privé (Block Public Access activé)
+  ✅ Pas d'accès direct aux fichiers
+  ✅ Génération de presigned URLs côté backend uniquement
+  ✅ Encryption at rest (AES-256)
+  ✅ Encryption in transit (TLS 1.3)
+  ✅ Versioning activé
+  ✅ Lifecycle policies (archivage Glacier après 1 an)
+
+Niveau 4: Filigrane (Watermark)
+  ✅ Ajout automatique lors de l'upload (Python/ReportLab)
+  ✅ Filigrane embarqué dans le PDF
+  ✅ Filigrane overlay dynamique lors de la lecture
+  ✅ Contenu du filigrane:
+      - Nom de la bibliothèque
+      - Date et heure de consultation
+      - IP du visiteur (partielle, ex: 192.168.x.x)
+      - Message: "Document protégé - Consultation en ligne uniquement"
+
+5.2 LIMITATION DES RISQUES
+---------------------------
+
+Risque: Capture d'écran
+  Mitigation: 
+    - Impossible à bloquer techniquement
+    - Filigrane visible dissuade le partage
+    - Qualité dégradée vs PDF original
+
+Risque: Impression d'écran
+  Mitigation:
+    - Désactivation Ctrl+P
+    - CSS @media print { display: none; }
+    - Message d'avertissement si impression détectée
+
+Risque: Extraction via DevTools
+  Mitigation:
+    - Détection d'ouverture des DevTools
+    - Désactivation temporaire si DevTools ouvert
+    - Alertes admin en cas d'abus
+
+Risque: Téléchargement via scripts/bots
+  Mitigation:
+    - Rate limiting agressif
+    - Captcha après X tentatives
+    - Blocage permanent si abus détecté
+    - Honeypots (fausses URLs)
+
+Risque: OCR sur captures d'écran
+  Mitigation:
+    - Impossible à bloquer
+    - Accepté comme risque résiduel minimal
+
+5.3 AUTHENTIFICATION ET AUTORISATION
+-------------------------------------
+
+Pour les administrateurs uniquement:
+
+Méthode: JWT (JSON Web Tokens)
+  Access Token:
+    - Durée de vie: 15 minutes
+    - Stockage: Memory (variable JS)
+    - Contenu: user_id, role, email
+  
+  Refresh Token:
+    - Durée de vie: 7 jours
+    - Stockage: HttpOnly Cookie (secure)
+    - Rotation automatique
+
+Workflow de login:
+  1. User envoie email + password
+  2. Backend vérifie credentials (bcrypt)
+  3. Backend génère access + refresh tokens
+  4. Frontend stocke access token en mémoire
+  5. Refresh token en cookie HttpOnly
+
+Workflow de refresh:
+  1. Access token expiré
+  2. Frontend envoie refresh token automatiquement
+  3. Backend valide refresh token
+  4. Backend génère nouveau access token
+  5. Si refresh token expiré → logout
+
+Protection:
+  - HTTPS obligatoire
+  - Bcrypt avec salt (cost factor 12)
+  - Rate limiting sur /login (5 tentatives/5min)
+  - Account lockout après 10 échecs
+  - 2FA optionnel (TOTP)
+
+5.4 PROTECTION CONTRE LES ATTAQUES
+-----------------------------------
+
+SQL Injection:
+  ✅ Utilisation ORM (Prisma) exclusivement
+  ✅ Requêtes paramétrées
+  ✅ Validation stricte des entrées
+
+XSS (Cross-Site Scripting):
+  ✅ Sanitization de toutes les entrées utilisateur
+  ✅ Content Security Policy (CSP) stricte
+  ✅ Échappement automatique (React)
+  ✅ DOMPurify pour les contenus riches
+
+CSRF (Cross-Site Request Forgery):
+  ✅ Tokens CSRF sur toutes les mutations
+  ✅ SameSite cookies
+  ✅ Vérification de l'origin
+
+DDoS:
+  ✅ Rate limiting global (Nginx/CloudFlare)
+  ✅ Rate limiting par endpoint
+  ✅ CloudFlare protection (optionnel)
+  ✅ Auto-scaling infrastructure
+
+Upload malveillants:
+  ✅ Validation stricte format PDF
+  ✅ Scan antivirus (ClamAV)
+  ✅ Taille max 50MB
+  ✅ Vérification Magic Numbers
+  ✅ Sandbox d'upload temporaire
+
+SSRF (Server-Side Request Forgery):
+  ✅ Pas de fetch d'URLs externes depuis le backend
+  ✅ Whitelist stricte si nécessaire
+
+5.5 CONFORMITÉ RGPD
+--------------------
+
+Données personnelles collectées:
+  - Administrateurs: email, nom, prénom
+  - Auteurs: nom, prénom, email (optionnel)
+  - Visiteurs: IP (anonymisée après 30j), pays, ville
+
+Mesures de conformité:
+  ✅ Bannière de consentement cookies
+  ✅ Politique de confidentialité
+  ✅ Mentions légales
+  ✅ Droit d'accès (pour auteurs)
+  ✅ Droit de rectification
+  ✅ Droit à l'effacement (RGPD)
+  ✅ Anonymisation automatique des IPs
+  ✅ Registre des traitements
+  ✅ DPO désigné (si >250 employés)
+  ✅ Chiffrement des données sensibles
+  ✅ Audits de sécurité réguliers
+
+================================================================================
+6. INTERFACE UTILISATEUR (UX/UI)
+================================================================================
+
+6.1 PRINCIPES DE DESIGN
+------------------------
+
+Design System: Material Design 3 ou custom
+  Justification:
+    - Accessible (WCAG 2.1 AA minimum)
+    - Responsive
+    - Cohérent
+    - Moderne
+
+Charte graphique:
+  - Couleurs: Tons académiques (bleu marine, gris, blanc)
+  - Typographie: 
+      Titres: Inter, Roboto, ou Poppins
+      Texte: Open Sans, Lato, ou system fonts
+  - Espacements: Échelle 8px
+  - Coins arrondis: 8px (composants), 16px (cartes)
+
+Accessibilité:
+  ✅ Contraste minimum 4.5:1 (texte)
+  ✅ Navigation au clavier complète
+  ✅ Screen reader friendly (ARIA labels)
+  ✅ Focus visible
+  ✅ Tailles de texte ajustables
+  ✅ Pas de contenu clignotant
+
+6.2 PAGES PRINCIPALES
+----------------------
+
+Page: Accueil (/)
+  Sections:
+    - Hero: Barre de recherche + slogan
+    - Statistiques: Nombre de docs, filières, établissements
+    - Documents récents (carrousel)
+    - Documents populaires (grille 3 colonnes)
+    - Parcourir par cycle (cartes cliquables)
+    - Footer: Liens utiles, contact, mentions légales
+
+Page: Recherche (/search)
+  Layout:
+    - Sidebar gauche: Filtres
+    - Corps principal: Résultats + tri
+    - Barre de recherche sticky en haut
+
+  Composants:
+    - Breadcrumbs
+    - Nombre de résultats
+    - Filtres actifs (pills supprimables)
+    - Carte de résultat:
+        * Miniature première page (optionnel)
+        * Titre (surligné si recherche)
+        * Auteur + année
+        * Extrait résumé (150 caractères)
+        * Badges: cycle, filière
+        * Icône vues
+        * Bouton "Lire"
+    - Pagination ou scroll infini
+
+Page: Détail document (/document/[slug])
+  Sections:
+    - Header: Titre + métadonnées principales
+    - Sidebar droite: Informations complémentaires
+        * Auteur (avec photo si dispo)
+        * Encadreur
+        * Établissement
+        * Filière
+        * Date de soutenance
+        * Nombre de pages
+        * Vues
+        * Mots-clés (tags cliquables)
+    - Corps:
+        * Résumé complet
+        * Bouton "Lire en ligne" (CTA principal)
+        * Section "Documents similaires"
+        * Bouton "Signaler"
+
+Page: Lecteur PDF (/reader/[id])
+  Layout fullscreen:
+    - Header minimal:
+        * Logo + titre document
+        * Zoom controls
+        * Page X/Y
+        * Bouton fermer
+    - Corps: Canvas PDF.js
+    - Sidebar gauche (toggleable):
+        * Miniatures pages
+        * Table des matières (si présente)
+    - Footer: Filigrane visible
+
+Page: Parcourir par cycle (/browse/cycle/[slug])
+  Layout:
+    - Breadcrumbs
+    - Titre + description du cycle
+    - Statistiques (nombre de docs, filières)
+    - Liste filtrée de documents
+    - Filtres toujours disponibles
+
+Dashboard Admin (/admin)
+  Sections:
+    - Vue d'ensemble (statistiques)
+    - Documents en attente (liste + actions rapides)
+    - Documents récents
+    - Graphiques (vues, uploads)
+    - Accès rapides:
+        * Déposer un document
+        * Gérer les utilisateurs
+        * Voir les statistiques complètes
+
+Page: Dépôt de document (/admin/upload)
+  Formulaire multi-étapes:
+    Étape 1: Upload du fichier
+      - Drag & drop zone
+      - Validation format/taille
+      - Preview PDF
+
+    Étape 2: Informations auteur
+      - Recherche auteur existant ou création
+      - Nom, prénom, email, photo
+
+    Étape 3: Informations académiques
+      - Établissement (select)
+      - Faculté (select dépendant)
+      - Filière (select dépendant)
+      - Cycle (select)
+      - Année académique
+      - Date de soutenance
+
+    Étape 4: Encadrement
+      - Recherche encadreur ou création
+      - Co-encadreur (optionnel)
+
+    Étape 5: Contenu
+      - Titre (pré-rempli si extrait PDF)
+      - Résumé (textarea)
+      - Mots-clés (tags input, min 3)
+      - Langue (select)
+
+    Étape 6: Validation
+      - Récapitulatif
+      - Bouton "Soumettre pour validation"
+      - Bouton "Enregistrer comme brouillon"
+
+6.3 COMPOSANTS RÉUTILISABLES
+-----------------------------
+
+SearchBar:
+  Props: placeholder, onSearch, autoComplete
+  Features: Suggestions, historique récent, clear button
+
+DocumentCard:
+  Props: document object
+  Variants: liste, grille, compact
+
+FilterPanel:
+  Props: filters config, onFilterChange
+  Features: Collapse/expand, badges actifs, reset
+
+PDFViewer:
+  Props: documentId, watermark config
+  Features: Zoom, navigation, fullscreen, watermark overlay
+
+StatsCard:
+  Props: title, value, icon, trend
+  Variants: simple, avec graphique
+
+Table:
+  Props: data, columns, actions
+  Features: Tri, pagination, sélection multiple, export
+
+Modal:
+  Props: title, content, actions
+  Variants: confirmation, formulaire, fullscreen
+
+Toast/Notification:
+  Types: success, error, warning, info
+  Position: top-right par défaut
+
+Breadcrumbs:
+  Props: items array
+  Features: Auto-génération depuis route
+
+Pagination:
+  Props: totalItems, itemsPerPage, currentPage
+  Variants: numbers, prev/next, load more
+
+TagInput:
+  Props: tags, onTagsChange, suggestions
+  Features: Auto-complete, création rapide
+
+6.4 RESPONSIVE DESIGN
+----------------------
+
+Breakpoints:
+  - Mobile: < 640px
+  - Tablet: 640px - 1024px
+  - Desktop: > 1024px
+
+Adaptations Mobile:
+  ✅ Navigation hamburger
+  ✅ Filtres en modal/drawer
+  ✅ Cartes en colonne simple
+  ✅ Formulaires simplifiés
+  ✅ Touch-friendly (min 44px touch targets)
+  ✅ Swipe gestures (lecteur PDF)
+
+Optimisations:
+  ✅ Images responsive (srcset)
+  ✅ Lazy loading
+  ✅ Code splitting (Next.js automatique)
+  ✅ Service Worker (PWA)
+  ✅ Offline fallback
+
+6.5 DARK MODE
+--------------
+
+Implémentation:
+  ✅ Toggle dans header
+  ✅ Préférence sauvegardée (localStorage)
+  ✅ Respect system preference (prefers-color-scheme)
+  ✅ Transition smooth
+
+Palette Dark:
+  - Background: #1a1a1a
+  - Surface: #2d2d2d
+  - Text primary: #ffffff
+  - Text secondary: #b0b0b0
+  - Accent: Même couleur primaire, ajustée
+
+================================================================================
+7. INTÉGRATION MEILISEARCH
+================================================================================
+
+7.1 CONFIGURATION
+-----------------
+
+Index principal: documents
+
+Champs indexés (searchableAttributes):
+  - title (poids: 5)
+  - abstract (poids: 3)
+  - keywords (poids: 4)
+  - author_name (poids: 2)
+  - supervisor_name (poids: 1)
+
+Champs filtrables (filterableAttributes):
+  - cycle_id
+  - field_id
+  - institution_id
+  - faculty_id
+  - academic_year
+  - defense_date
+  - language
+  - document_type
+
+Champs triables (sortableAttributes):
+  - defense_date
+  - created_at
+  - view_count
+  - popularity_score
+
+Champs affichés (displayedAttributes):
+  - id
+  - title
+  - slug
+  - abstract
+  - author_name
+  - cycle_name
+  - field_name
+  - academic_year
+  - defense_date
+  - view_count
+
+7.2 STRATÉGIE D'INDEXATION
+---------------------------
+
+Indexation initiale:
+  - Script de migration pour peupler Meilisearch
+  - Batch processing (1000 docs/batch)
+  - Progress bar et logs
+
+Indexation incrémentale:
+  Triggers:
+    - Nouveau document approuvé → addDocuments()
+    - Document modifié → updateDocuments()
+    - Document supprimé → deleteDocuments()
+
+  Implémentation:
+    - Webhooks depuis NestJS
+    - Queue Celery/Bull pour async
+    - Retry automatique si échec
+
+Réindexation complète:
+  - Commande admin manuelle
+  - Planifié: 1 fois/semaine (nuit)
+  - Utilisé en cas de drift données
+
+7.3 REQUÊTES DE RECHERCHE
+--------------------------
+
+Recherche simple:
+```javascript
+const results = await meili.index('documents').search(query, {
+  limit: 20,
+  offset: 0,
+  attributesToHighlight: ['title', 'abstract'],
+  attributesToCrop: ['abstract'],
+  cropLength: 200
+});
+```
+
+Recherche avec filtres:
+```javascript
+const results = await meili.index('documents').search(query, {
+  filter: [
+    'cycle_id = "uuid-master"',
+    'academic_year >= "2020-2021"',
+    'field_id IN ["uuid-1", "uuid-2"]'
+  ],
+  sort: ['view_count:desc'],
+  limit: 20
+});
+```
+
+Facettes (pour filtres UI):
+```javascript
+const results = await meili.index('documents').search(query, {
+  facets: ['cycle_id', 'field_id', 'academic_year', 'language']
+});
+
+// Retourne le nombre de documents par facette
+// Ex: { cycle_id: { "uuid-licence": 120, "uuid-master": 85 } }
+```
+
+7.4 OPTIMISATIONS
+-----------------
+
+Typo Tolerance:
+  - 1 typo autorisée pour mots < 5 caractères
+  - 2 typos autorisées pour mots >= 5 caractères
+
+Stop Words (français):
+  - le, la, les, de, du, des, un, une, etc.
+  - Liste complète configurable
+
+Synonymes:
+  - IA ↔ Intelligence Artificielle
+  - ML ↔ Machine Learning
+  - Dev ↔ Développement
+  - Config personnalisable
+
+Proximity Ranking:
+  - Termes proches dans le texte = meilleur score
+
+================================================================================
+8. STOCKAGE AWS S3
+================================================================================
+
+8.1 CONFIGURATION S3
+--------------------
+
+Bucket: academic-library-prod
+  Région: eu-west-1 (ou la plus proche)
+  
+  Paramètres:
+    ✅ Block Public Access: Activé
+    ✅ Versioning: Activé
+    ✅ Encryption: AES-256 (SSE-S3)
+    ✅ Logging: Activé (vers bucket de logs)
+    ✅ Object Lock: Optionnel (immutabilité)
+
+  Structure des dossiers:
+    /documents/
+      /{year}/
+        /{cycle}/
+          /{institution}/
+            /{document_id}.pdf
+
+  Exemple:
+    /documents/2024/master/universite-paris/abc123-xyz789.pdf
+
+Lifecycle Policies:
+  - Standard → Infrequent Access (après 90 jours sans accès)
+  - Infrequent Access → Glacier (après 1 an)
+  - Suppression définitive (après 7 ans - configurable)
+
+8.2 UPLOAD WORKFLOW
+-------------------
+
+Côté Frontend (Next.js):
+  1. User sélectionne fichier PDF
+  2. Validation côté client (taille, format)
+  3. Demande de presigned POST URL au backend
+  4. Upload direct vers S3 avec presigned URL
+  5. Callback vers backend avec s3_key
+  6. Backend finalise l'enregistrement DB
+
+Côté Backend (NestJS):
+  1. Génération presigned POST URL (expiration 1h)
+  2. Retour URL au frontend
+  3. Réception callback post-upload
+  4. Vérification fichier existe sur S3
+  5. Traitement asynchrone:
+      - Extraction métadonnées
+      - Ajout filigrane
+      - Scan antivirus
+      - Génération miniature
+      - Indexation Meilisearch
+  6. Mise à jour statut document DB
+
+8.3 DOWNLOAD WORKFLOW (Lecture)
+--------------------------------
+
+Côté Frontend:
+  1. User clique "Lire en ligne"
+  2. Demande URL signée au backend
+  3. Réception URL signée (expiration 1h)
+  4. Chargement PDF via PDF.js
+  5. Rendering dans canvas sécurisé
+  6. Incrémentation view_count
+
+Côté Backend:
+  1. Vérification permissions (document approved)
+  2. Rate limiting (10 docs/heure par IP)
+  3. Génération presigned GET URL S3
+  4. Logging de la consultation
+  5. Retour URL au frontend
+
+Presigned URL:
+```javascript
+const url = s3.getSignedUrl('getObject', {
+  Bucket: 'academic-library-prod',
+  Key: document.s3_key,
+  Expires: 3600, // 1 heure
+  ResponseContentDisposition: 'inline', // Forcer affichage
+  ResponseContentType: 'application/pdf'
+});
+```
+
+8.4 SÉCURITÉ S3
+---------------
+
+IAM Policy (Backend):
+  Permissions minimales:
+    - s3:PutObject (sur /documents/*)
+    - s3:GetObject (sur /documents/*)
+    - s3:DeleteObject (sur /documents/*)
+    - s3:ListBucket
+
+Bucket Policy:
+  - Deny all public access
+  - Allow uniquement via IAM roles
+  - Enforce HTTPS (aws:SecureTransport)
+  - Deny unencrypted uploads
+
+CORS Configuration:
+```json
+{
+  "CORSRules": [{
+    "AllowedOrigins": ["https://yourdomain.com"],
+    "AllowedMethods": ["GET", "PUT", "POST"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }]
+}
+```
+
+8.5 MONITORING S3
+------------------
+
+Métriques CloudWatch:
+  - Nombre de requêtes (GET/PUT)
+  - Taille totale du bucket
+  - Erreurs 4xx/5xx
+  - Latence moyenne
+
+Alertes:
+  - Alerte si erreurs > 5% des requêtes
+  - Alerte si latence > 2 secondes
+  - Alerte si coûts > seuil défini
+
+Logs:
+  - Access logs vers bucket séparé
+  - Analyse avec AWS Athena
+  - Détection d'anomalies
+
+8.6 OPTIMISATION COÛTS
+----------------------
+
+CloudFront CDN:
+  - Distribution pour /documents/*
+  - Cache TTL 1 heure
+  - Invalidation automatique si document modifié
+  - Réduction coûts S3 GET
+
+Intelligent Tiering:
+  - Déplacement automatique vers IA si peu consulté
+  - Économies 40% sur objets rarement accédés
+
+Requester Pays (optionnel):
+  - Transférer coûts de bande passante au demandeur
+  - Utile si très forte consultation externe
+
+Estimation coûts mensuels (10,000 documents, 50GB):
+  - Stockage S3: ~$1.15/mois
+  - Requêtes GET (100k/mois): ~$0.04
+  - Transfert sortant (50GB): ~$4.50
+  - CloudFront: ~$3
+  - Total: ~$9/mois
+
+================================================================================
+9. FONCTIONNALITÉS AVANCÉES (ROADMAP)
+================================================================================
+
+9.1 PHASE 1 - MVP (Mois 1-3)
+----------------------------
+✅ Consultation publique sans authentification
+✅ Lecteur PDF sécurisé avec filigrane
+✅ Recherche basique (titre, auteur, mots-clés)
+✅ Filtres essentiels (cycle, filière, année)
+✅ Dashboard admin simple
+✅ Upload et validation de documents
+✅ Métadonnées complètes
+✅ Stockage S3
+✅ Base de données PostgreSQL
+✅ Responsive design
+
+9.2 PHASE 2 - AMÉLIORATION (Mois 4-6)
+--------------------------------------
+⏳ Intégration Meilisearch (recherche avancée)
+⏳ Statistiques détaillées (analytics)
+⏳ Dark mode
+⏳ Multilingue (FR/EN)
+⏳ PWA (Progressive Web App)
+⏳ Notifications admin (nouveaux dépôts)
+⏳ Export statistiques (PDF, Excel)
+⏳ Recommandations de documents similaires
+⏳ Historique de recherche (visiteurs)
+⏳ Amélioration UX/UI (animations, micro-interactions)
+
+9.3 PHASE 3 - INNOVATION (Mois 7-12)
+------------------------------------
+🔮 Application mobile (React Native)
+🔮 OCR automatique (extraction texte PDF scannés)
+🔮 Détection anti-plagiat
+🔮 Classification automatique (ML)
+🔮 Résumés automatiques (IA)
+🔮 Chatbot assistance recherche
+🔮 API publique (pour chercheurs)
+🔮 Intégration Zotero/Mendeley
+🔮 Citation automatique (APA, MLA, etc.)
+🔮 Social features (likes, commentaires modérés)
+🔮 Bookmark/Favoris (avec compte optionnel)
+🔮 Notifications nouveaux docs par filière
+
+9.4 DÉTAILS FONCTIONNALITÉS AVANCÉES
+-------------------------------------
+
+OCR (Optical Character Recognition):
+  Outil: Tesseract 5.0 + Python pytesseract
+  Workflow:
+    1. Détection si PDF scanné (pas de couche texte)
+    2. Conversion PDF → Images (pdf2image)
+    3. OCR par page
+    4. Reconstruction PDF avec couche texte
+    5. Remplacement PDF original
+  
+  Cas d'usage:
+    - Vieux mémoires scannés
+    - Documents numérisés sans OCR
+    - Amélioration indexation recherche
+
+Anti-Plagiat:
+  Méthode 1: Comparaison interne
+    - Extraction texte de tous documents
+    - Vectorisation (TF-IDF ou embeddings)
+    - Calcul similarité cosinus
+    - Alerte si similarité > 70%
+
+  Méthode 2: API externe (Copyleaks, Turnitin)
+    - Intégration via API
+    - Coût par document
+    - Rapport détaillé
+
+  Workflow:
+    1. Nouveau document uploadé
+    2. Extraction texte
+    3. Comparaison avec corpus existant
+    4. Génération rapport similarité
+    5. Notification admin si suspect
+    6. Validation manuelle finale
+
+Classification Automatique:
+  Modèle: BERT multilingue fine-tuné
+  
+  Training:
+    - Dataset: Ensemble documents existants étiquetés
+    - Features: titre + résumé + mots-clés
+    - Labels: filières, cycles, domaines
+    - Fine-tuning sur domaine académique
+  
+  Inference:
+    1. Nouveau document uploadé
+    2. Extraction titre + résumé
+    3. Prédiction filière (top 3 suggestions)
+    4. Admin valide ou corrige
+    5. Feedback pour améliorer modèle
+  
+  Bénéfices:
+    - Gain de temps admin
+    - Cohérence classification
+    - Suggestions mots-clés
+
+Résumés Automatiques (IA):
+  Modèle: GPT-4, Claude, ou Llama fine-tuné
+  
+  Workflow:
+    1. Extraction texte intégral PDF
+    2. Chunking (par sections si possible)
+    3. Génération résumé (250-500 mots)
+    4. Extraction mots-clés automatique
+    5. Admin review et édition
+  
+  Utilisation:
+    - Pré-remplissage résumé lors de l'upload
+    - Génération résumés courts pour aperçu
+    - Traduction automatique résumés
+
+Chatbot Assistance:
+  Technologie: RAG (Retrieval-Augmented Generation)
+  
+  Architecture:
+    - Vectorisation corpus de documents
+    - Stockage embeddings (Pinecone, Weaviate)
+    - LLM (GPT-4, Claude) pour génération
+    - Interface chat intégrée
+  
+  Fonctionnalités:
+    - "Trouve-moi des mémoires sur l'IA en santé"
+    - "Résume-moi ce document"
+    - "Quels sont les mots-clés tendance cette année ?"
+    - "Recommande-moi des documents similaires"
+  
+  Limites:
+    - Pas d'accès au contenu intégral (seulement métadonnées)
+    - Réponses basées sur résumés et mots-clés
+    - Redirection vers recherche classique pour précision
+
+API Publique:
+  Endpoints:
+    GET /api/v1/documents - Liste paginée
+    GET /api/v1/documents/:id - Détails document
+    GET /api/v1/search - Recherche
+    GET /api/v1/stats - Statistiques publiques
+  
+  Authentification:
+    - API Key (pour chercheurs enregistrés)
+    - Rate limiting: 1000 req/jour gratuit
+    - Plans payants pour usage intensif
+  
+  Documentation:
+    - Swagger/OpenAPI
+    - Exemples code (Python, JS, R)
+    - SDKs officiels
+
+Application Mobile (React Native):
+  Fonctionnalités:
+    - Recherche et consultation
+    - Lecteur PDF optimisé mobile
+    - Notifications push (nouveaux docs)
+    - Mode offline (cache)
+    - Bookmarks synchronisés
+    - Scanner QR (partage documents)
+  
+  Plateformes:
+    - iOS 14+
+    - Android 10+
+  
+  Tech Stack:
+    - React Native (Expo)
+    - React Navigation
+    - React Query
+    - AsyncStorage
+    - PDF.js ou react-native-pdf
+
+================================================================================
+10. PLAN DE DÉVELOPPEMENT
+================================================================================
+
+10.1 ÉQUIPE RECOMMANDÉE
+-----------------------
+
+Pour un projet de cette envergure:
+
+MVP (3 mois):
+  - 1 Full-Stack Developer (Next.js + NestJS) - Senior
+  - 1 DevOps Engineer (Docker, AWS, CI/CD) - Mid
+  - 1 UI/UX Designer - Junior/Mid
+  - 1 Chef de projet / Product Owner
+  Total: 4 personnes
+
+Production complète (12 mois):
+  - 2 Frontend Developers (Next.js, React Native)
+  - 2 Backend Developers (NestJS)
+  - 1 Data Engineer (ML/IA pour fonctionnalités avancées)
+  - 1 DevOps/SRE Engineer
+  - 1 UI/UX Designer
+  - 1 QA Engineer
+  - 1 Product Owner
+  - 1 Scrum Master (optionnel)
+  Total: 9-10 personnes
+
+10.2 TIMELINE DÉTAILLÉE
+------------------------
+
+SPRINT 0 (2 semaines) - Setup & Planification
+  ✅ Setup repositories (Git, CI/CD)
+  ✅ Configuration environnements (dev, staging, prod)
+  ✅ Setup bases de données (PostgreSQL, Redis)
+  ✅ Configuration AWS (S3, IAM)
+  ✅ Design System & Wireframes
+  ✅ Architecture technique validée
+  ✅ User stories & backlog priorisé
+
+SPRINT 1-2 (4 semaines) - Fondations Backend
+  ✅ Setup NestJS avec TypeScript
+  ✅ Configuration Prisma ORM
+  ✅ Schéma base de données complet
+  ✅ Migrations initiales
+  ✅ API CRUD documents
+  ✅ API CRUD users/admin
+  ✅ Authentification JWT
+  ✅ Intégration AWS S3
+  ✅ Upload de fichiers
+  ✅ Tests unitaires (>70% coverage)
+
+SPRINT 3-4 (4 semaines) - Frontend Core
+  ✅ Setup Next.js 14 (App Router)
+  ✅ Configuration Tailwind CSS
+  ✅ Composants UI de base
+  ✅ Pages publiques (accueil, recherche, détail)
+  ✅ Intégration API backend
+  ✅ State management (Zustand)
+  ✅ React Query pour data fetching
+  ✅ Responsive design (mobile, tablet, desktop)
+
+SPRINT 5 (2 semaines) - Lecteur PDF Sécurisé
+  ✅ Intégration PDF.js
+  ✅ Désactivation téléchargement/impression
+  ✅ Filigrane dynamique
+  ✅ Navigation dans le PDF
+  ✅ Mode plein écran
+  ✅ Tests sécurité
+
+SPRINT 6 (2 semaines) - Dashboard Admin
+  ✅ Pages admin (upload, validation, stats)
+  ✅ Formulaire upload multi-étapes
+  ✅ Workflow de validation
+  ✅ Gestion utilisateurs
+  ✅ Statistiques de base
+
+SPRINT 7 (2 semaines) - Recherche & Filtres
+  ✅ Intégration Meilisearch
+  ✅ Indexation documents
+  ✅ Recherche full-text
+  ✅ Filtres multicritères
+  ✅ Tri des résultats
+  ✅ Pagination
+
+SPRINT 8 (2 semaines) - Sécurité & Optimisation
+  ✅ Rate limiting
+  ✅ HTTPS & SSL
+  ✅ Helmet.js (headers sécurité)
+  ✅ CORS configuration
+  ✅ Sanitization inputs
+  ✅ Audit de sécurité
+  ✅ Performance optimization
+  ✅ Lighthouse score >90
+
+SPRINT 9 (2 semaines) - Tests & QA
+  ✅ Tests end-to-end (Cypress/Playwright)
+  ✅ Tests d'intégration
+  ✅ Tests de charge (K6)
+  ✅ Tests de sécurité (OWASP)
+  ✅ Tests accessibilité
+  ✅ Correction bugs
+
+SPRINT 10 (2 semaines) - Déploiement & Documentation
+  ✅ Configuration production (AWS)
+  ✅ CI/CD finalisé
+  ✅ Monitoring (Sentry, Prometheus)
+  ✅ Logging (Winston)
+  ✅ Backups automatiques
+  ✅ Documentation technique
+  ✅ Documentation utilisateur
+  ✅ Formation administrateurs
+
+SPRINT 11-12 (4 semaines) - Buffer & Améliorations
+  ✅ Correction bugs post-QA
+  ✅ Améliorations UX basées sur feedback
+  ✅ Optimisations performance
+  ✅ Préparation lancement
+
+TOTAL MVP: 24 semaines (6 mois)
+
+10.3 BUDGET ESTIMATIF
+---------------------
+
+Infrastructure (mensuel):
+  - AWS EC2 (t3.medium x2): $60
+  - AWS RDS PostgreSQL (db.t3.medium): $70
+  - AWS S3 (100GB + requêtes): $10
+  - AWS CloudFront: $5
+  - ElastiCache Redis: $30
+  - Meilisearch Cloud (ou self-hosted): $0-50
+  - Domaine + SSL: $2
+  - Monitoring (Sentry, etc.): $30
+  Total: ~$200-250/mois
+
+Développement (6 mois MVP):
+  - 1 Full-Stack Senior: $90k/an → $45k (6 mois)
+  - 1 DevOps Mid: $70k/an → $35k
+  - 1 UI/UX Junior: $50k/an → $25k
+  - 1 Product Owner: $80k/an → $40k
+  Total salaires: ~$145k (6 mois)
+
+Outils & Licences:
+  - GitHub Teams: $4/user/mois x 4 x 6 = $144
+  - Figma Pro: $15/user/mois x 2 x 6 = $180
+  - Autres SaaS: ~$500
+  Total: ~$1000 (6 mois)
+
+BUDGET TOTAL MVP: ~$150k (USD) pour 6 mois
+
+10.4 MÉTRIQUES DE SUCCÈS (KPIs)
+-------------------------------
+
+Techniques:
+  ✅ Uptime > 99.9%
+  ✅ Temps de réponse API < 200ms (p95)
+  ✅ Temps de chargement page < 2s
+  ✅ Lighthouse score > 90
+  ✅ 0 vulnérabilités critiques
+
+Business:
+  ✅ 1000 documents en ligne (mois 6)
+  ✅ 10,000 visiteurs uniques/mois (mois 12)
+  ✅ 50,000 consultations/mois (mois 12)
+  ✅ Taux de satisfaction > 80%
+  ✅ NPS (Net Promoter Score) > 50
+
+Qualité:
+  ✅ Test coverage > 80%
+  ✅ 0 bugs critiques en production
+  ✅ Temps de résolution bugs < 24h
+  ✅ Documentation complète et à jour
+
+================================================================================
+11. CONFORMITÉ ET LÉGAL
+================================================================================
+
+11.1 PROPRIÉTÉ INTELLECTUELLE
+------------------------------
+
+Droits d'auteur:
+  - Les auteurs conservent leurs droits sur leurs travaux
+  - Licence de diffusion accordée à la plateforme
+  - Mention explicite de l'auteur sur chaque document
+  - Possibilité de retrait à la demande de l'auteur
+
+Contrat de dépôt:
+  L'auteur autorise:
+    ✅ La mise en ligne du document
+    ✅ La consultation publique
+    ✅ L'indexation par moteurs de recherche
+    ✅ La conservation pérenne
+  
+  L'auteur interdit:
+    ❌ La modification du contenu
+    ❌ L'usage commercial sans autorisation
+    ❌ La reproduction totale sans citation
+
+Licence recommandée: Creative Commons BY-NC-ND
+  - Attribution (BY): Citer l'auteur
+  - Non Commercial (NC): Pas d'usage commercial
+  - No Derivatives (ND): Pas de modification
+
+11.2 MENTIONS LÉGALES
+---------------------
+
+Informations obligatoires:
+  - Nom de l'organisme éditeur
+  - Adresse du siège social
+  - Numéro SIRET/SIREN
+  - Directeur de publication
+  - Hébergeur (nom, adresse)
+  - Contact (email, téléphone)
+
+Responsabilité:
+  - Clause de non-responsabilité contenu
+  - Clause de disponibilité du service
+  - Clause de propriété intellectuelle
+
+11.3 POLITIQUE DE CONFIDENTIALITÉ
+----------------------------------
+
+Données collectées:
+  Visiteurs:
+    - IP (anonymisée après 30j)
+    - Pays/Ville (géolocalisation IP)
+    - Historique de consultation (90j)
+    - Recherches effectuées (90j)
+  
+  Administrateurs:
+    - Email, nom, prénom
+    - Logs d'activité (1 an)
+
+Base légale:
+  - Consentement (cookies)
+  - Intérêt légitime (statistiques)
+  - Obligation légale (logs de sécurité)
+
+Droits des personnes:
+  - Droit d'accès
+  - Droit de rectification
+  - Droit à l'effacement
+  - Droit d'opposition
+  - Droit à la portabilité
+
+Conservation des données:
+  - Visiteurs: 90 jours
+  - Administrateurs: Durée du contrat + 5 ans
+  - Documents: Illimité (archivage patrimonial)
+
+11.4 CONDITIONS GÉNÉRALES D'UTILISATION
+----------------------------------------
+
+Accès au service:
+  - Gratuit et libre
+  - Réservé à un usage personnel et non commercial
+  - Interdit: scraping, téléchargement massif, revente
+
+Responsabilités:
+  - Plateforme: Hébergement et mise à disposition
+  - Auteurs: Exactitude du contenu
+  - Utilisateurs: Usage conforme
+
+Suspension du compte:
+  - En cas d'abus (admin)
+  - En cas de violation des CGU
+
+11.5 ACCESSIBILITÉ NUMÉRIQUE
+-----------------------------
+
+Conformité WCAG 2.1 niveau AA:
+  ✅ Contrastes suffisants
+  ✅ Navigation au clavier
+  ✅ Lecteurs d'écran compatibles
+  ✅ Textes alternatifs
+  ✅ ARIA labels
+
+Déclaration d'accessibilité:
+  - Page dédiée
+  - Niveau de conformité
+  - Contact pour signaler des problèmes
+
+11.6 COOKIES ET TRACEURS
+-------------------------
+
+Types de cookies:
+  - Essentiels (auth admin): Durée session
+  - Préférences (dark mode, langue): 1 an
+  - Statistiques (analytics): 13 mois
+  - Marketing: Aucun
+
+Bannière de consentement:
+  - Affichée à la première visite
+  - Choix granulaire (accepter/refuser par type)
+  - Possibilité de modifier à tout moment
+  - Conformité ePrivacy
+
+================================================================================
+12. MONITORING ET MAINTENANCE
+================================================================================
+
+12.1 MONITORING APPLICATIF
+---------------------------
+
+Métriques à surveiller:
+  - Uptime (disponibilité)
+  - Temps de réponse API
+  - Taux d'erreur
+  - Utilisation CPU/RAM/Disque
+  - Nombre de requêtes/seconde
+  - Taille de la queue (Celery/Bull)
+  - Latence base de données
+  - Cache hit rate (Redis)
+
+Outils:
+  - Prometheus: Collecte métriques
+  - Grafana: Dashboards visuels
+  - Sentry: Tracking erreurs
+  - Winston: Logs applicatifs
+  - AWS CloudWatch: Infrastructure
+
+Alertes:
+  - Uptime < 99%: Notification immédiate
+  - Erreurs > 5%: Notification 5 min
+  - Temps réponse > 2s: Notification 10 min
+  - Disque > 80%: Notification 1h
+  - Queue > 1000 jobs: Notification 10 min
+
+12.2 BACKUPS
+------------
+
+Base de données (PostgreSQL):
+  - Full backup: Quotidien à 2h du matin
+  - Incremental backup: Toutes les 6h
+  - Rétention: 30 jours
+  - Stockage: AWS S3 (différente région)
+  - Tests de restauration: Mensuel
+
+Fichiers (S3):
+  - Versioning activé
+  - Cross-region replication
+  - Lifecycle: Glacier après 1 an
+  - Rétention: Illimitée
+
+Configuration:
+  - Code: Git (GitHub/GitLab)
+  - Secrets: AWS Secrets Manager
+  - Infrastructure as Code: Terraform
+  - Backup: Quotidien
+
+12.3 PLAN DE REPRISE D'ACTIVITÉ (PRA)
+--------------------------------------
+
+RTO (Recovery Time Objective): 4 heures
+RPO (Recovery Point Objective): 1 heure
+
+Scénarios de disaster:
+  1. Panne serveur web → Basculement auto-scaling
+  2. Panne base de données → Basculement replica
+  3. Panne région AWS → Basculement région secondaire
+  4. Corruption données → Restauration backup
+
+Procédure:
+  1. Détection incident (monitoring)
+  2. Alerte équipe (PagerDuty)
+  3. Diagnostic (runbook)
+  4. Activation PRA si nécessaire
+  5. Communication utilisateurs (status page)
+  6. Restauration
+  7. Post-mortem
+
+12.4 MAINTENANCE PRÉVENTIVE
+---------------------------
+
+Hebdomadaire:
+  ✅ Revue logs d'erreurs
+  ✅ Vérification alertes
+  ✅ Mise à jour dépendances mineures
+
+Mensuelle:
+  ✅ Audit de sécurité
+  ✅ Test de restauration backup
+  ✅ Revue performance
+  ✅ Nettoyage données obsolètes
+  ✅ Mise à jour documentation
+
+Trimestrielle:
+  ✅ Mise à jour majeure dépendances
+  ✅ Revue architecture
+  ✅ Optimisation base de données
+  ✅ Audit RGPD
+
+Annuelle:
+  ✅ Pentest (test intrusion)
+  ✅ Audit code complet
+  ✅ Revue infrastructure
+  ✅ Plan de capacité
+
+12.5 GESTION DES INCIDENTS
+---------------------------
+
+Niveaux de sévérité:
+  - P0 (Critique): Site down, perte de données
+  - P1 (Majeure): Fonctionnalité principale cassée
+  - P2 (Mineure): Bug affectant peu d'utilisateurs
+  - P3 (Cosmétique): Problème visuel sans impact
+
+SLA (Service Level Agreement):
+  - P0: Résolution < 4h
+  - P1: Résolution < 24h
+  - P2: Résolution < 1 semaine
+  - P3: Résolution < 1 mois
+
+Workflow:
+  1. Détection (monitoring ou signalement)
+  2. Triage (sévérité, assignation)
+  3. Investigation
+  4. Correction
+  5. Déploiement
+  6. Vérification
+  7. Post-mortem (P0/P1)
+
+================================================================================
+13. CONCLUSION
+================================================================================
+
+Ce document de contexte fournit une vue d'ensemble complète du projet de 
+bibliothèque numérique académique. Il couvre:
+
+✅ Objectifs et cibles
+✅ Stack technique moderne et scalable
+✅ Fonctionnalités détaillées
+✅ Architecture base de données
+✅ Sécurité robuste
+✅ Expérience utilisateur optimale
+✅ Roadmap d'évolution
+✅ Plan de développement
+✅ Conformité légale
+✅ Monitoring et maintenance
+
+Le projet est conçu pour être:
+  - Sécurisé (lecture seule, protection contenu)
+  - Performant (recherche <50ms, chargement <2s)
+  - Scalable (support de millions de documents)
+  - Maintenable (code clean, documentation)
+  - Évolutif (roadmap IA, mobile, API)
+
+Technologies clés:
+  Frontend: Next.js + TypeScript + Tailwind
+  Backend: NestJS + Prisma + PostgreSQL
+  Recherche: Meilisearch
+  Stockage: AWS S3
+  Sécurité: JWT + Rate Limiting + PDF.js custom
+
+Prochaines étapes:
+  1. Validation du contexte avec les parties prenantes
+  2. Constitution de l'équipe
+  3. Lancement Sprint 0 (setup)
+  4. Développement MVP (6 mois)
+  5. Lancement pilote
+  6. Itérations et améliorations
+
+================================================================================
+CONTACT
+================================================================================
+
+Pour toute question ou clarification concernant ce document, contacter:
+  - Chef de projet: [À définir]
+  - Architecte technique: [À définir]
+  - Email: [À définir]
+
+Version: 1.0.0
+Date: Janvier 2025
+Statut: Approuvé / En attente de validation
+
+================================================================================
+FIN DU DOCUMENT
+================================================================================

@@ -1,0 +1,172 @@
+# 📐 Diagramme UI/UX – Bibliothèque Académique Numérique (MVP)
+
+Ce document sert de **référence unique** pour réaliser la maquette (Figma / Antigravity). Il liste **toutes les pages, composants et flux utilisateurs**.
+
+---
+
+## 🗺️ 1. ARBORESCENCE GÉNÉRALE (SITEMAP)
+
+### 🌐 Pages publiques
+
+* Accueil
+* Recherche / Résultats
+* Consultation d’un mémoire (PDF sécurisé)
+* À propos
+* Contact / Support
+* Mentions légales / Confidentialité
+
+### 👤 Espace Étudiant
+
+* Inscription
+* Connexion
+* Tableau de bord étudiant
+* Dépôt de mémoire
+* Suivi / Historique des soumissions
+
+### 🏫 Espace Établissement
+
+* Connexion établissement
+* Tableau de bord établissement
+* Validation des mémoires
+* Dépôt établissement (nouveau / ancien)
+* Statistiques établissement
+
+### 🛠️ Administration (optionnel MVP)
+
+* Dashboard admin
+* Gestion établissements
+* Gestion utilisateurs
+* Statistiques globales
+
+---
+
+## 🔁 2. FLUX UTILISATEURS PRINCIPAUX
+
+### 🧑‍🎓 Flux Étudiant
+
+Accueil → Connexion → Tableau de bord → Dépôt mémoire → Statut : En attente → Notification → Publié
+
+### 🏫 Flux Établissement
+
+Connexion → Tableau de bord → Liste à valider → Lecture PDF → Valider / Rejeter → Publication
+
+### 🌍 Flux Public
+
+Accueil → Recherche → Liste résultats → Lire mémoire (PDF sécurisé)
+
+---
+
+## 🧩 3. DÉTAIL DES PAGES & COMPOSANTS
+
+### 🏠 Accueil
+
+* Header : Logo + Nom app
+* Menu : Accueil | Recherche | À propos | Connexion
+* Barre de recherche sémantique
+* Filtres rapides (Cycle, Filière, Établissement)
+* Cartes mémoires récents
+* Footer : Contact | Mentions légales
+
+---
+
+### 🔍 Recherche / Résultats
+
+* Champ recherche (persistant)
+* Filtres avancés (sidebar)
+* Liste de cartes mémoires :
+
+  * Titre
+  * Auteur
+  * Cycle / Filière
+  * Établissement
+  * Résumé court
+  * Bouton "Lire"
+
+---
+
+### 📄 Consultation Mémoire
+
+* Titre
+* Métadonnées complètes
+* Résumé automatique (académique + simple)
+* Lecteur PDF sécurisé
+
+  * Scroll
+  * Zoom
+  * Filigrane dynamique
+* Bouton retour
+
+---
+
+### 📊 Tableau de bord Étudiant
+
+* Message d’accueil
+* Bouton "Soumettre un mémoire"
+* Liste des mémoires soumis
+
+  * Titre
+  * Date
+  * Statut (badge)
+* Notifications
+
+---
+
+### 📝 Dépôt Mémoire (Formulaire dynamique)
+
+* Champs texte : Titre, Résumé, Encadreur
+* Sélecteurs : Cycle, Filière, Classe, Année
+* Upload PDF
+* Bouton "Soumettre pour validation"
+* Message confirmation
+
+---
+
+### 🏫 Tableau de bord Établissement
+
+* Statistiques simples
+* Liste mémoires à valider
+* Bouton "Ajouter un mémoire"
+
+---
+
+### ✅ Validation Mémoire
+
+* Aperçu PDF
+* Métadonnées
+* Boutons : Valider ✅ | Rejeter ❌
+* Champ commentaire (si rejet)
+* Historique des actions
+
+---
+
+## 🔘 4. COMPOSANTS UI RÉUTILISABLES
+
+* Header / Navbar
+* Footer
+* Carte mémoire
+* Badge statut (En attente / Validé / Rejeté / Publié)
+* Boutons primaires / secondaires
+* Modals (confirmation, rejet)
+* Notifications (toast)
+* Loader / état vide
+
+---
+
+## 🎨 5. RÈGLES UX IMPORTANTES
+
+* Mobile-first
+* Lecture sans téléchargement
+* Feedback visuel clair pour chaque action
+* Parcours simple (max 3 clics pour lire un mémoire)
+
+---
+
+## ✅ 6. UTILISATION DU DOCUMENT
+
+* Base pour maquette Figma
+* Checklist de développement
+* Référence pour audit UX / fonctionnel
+
+---
+
+📌 **Objectif** : une application claire, institutionnelle, moderne et accessible au contexte gabonais.
