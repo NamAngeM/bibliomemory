@@ -32,7 +32,10 @@ export default function SubmitThesisPage() {
         defenseDate: "",
         cycleId: "",
         fieldId: "",
+        className: "",
+        matricule: "",
         mainSupervisorId: "",
+        coSupervisorId: "",
         keywords: "",
     })
 
@@ -82,7 +85,10 @@ export default function SubmitThesisPage() {
             formData.append("defenseDate", form.defenseDate)
             formData.append("cycleId", form.cycleId)
             formData.append("fieldId", form.fieldId)
+            formData.append("className", form.className)
+            if (form.matricule) formData.append("matricule", form.matricule)
             formData.append("mainSupervisorId", form.mainSupervisorId)
+            if (form.coSupervisorId) formData.append("coSupervisorId", form.coSupervisorId)
             formData.append("keywords", form.keywords.split(",").map(k => k.trim()).join(","))
 
             await workflowApi.submitByStudent(formData)
@@ -178,6 +184,27 @@ export default function SubmitThesisPage() {
                                             </Select>
                                         </div>
                                         <div className="space-y-2">
+                                            <Label htmlFor="coSupervisor">Co-encadreur (Optionnel)</Label>
+                                            <Select
+                                                onValueChange={val => setForm({ ...form, coSupervisorId: val })}
+                                            >
+                                                <SelectTrigger id="coSupervisor">
+                                                    <SelectValue placeholder="Choisir un co-encadreur" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="">Aucun</SelectItem>
+                                                    {metadata.supervisors.map(s => (
+                                                        <SelectItem key={s.id} value={s.id}>
+                                                            {s.title} {s.firstName} {s.lastName}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
                                             <Label htmlFor="year">Année Académique *</Label>
                                             <Select
                                                 onValueChange={val => setForm({ ...form, academicYear: val })}
@@ -192,6 +219,16 @@ export default function SubmitThesisPage() {
                                                     <SelectItem value="2023-2024">2023-2024</SelectItem>
                                                 </SelectContent>
                                             </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="matricule">Matricule (Optionnel)</Label>
+                                            <Input
+                                                id="matricule"
+                                                value={form.matricule}
+                                                onChange={e => setForm({ ...form, matricule: e.target.value })}
+                                                placeholder="Ex: 2024001"
+                                                className="h-12"
+                                            />
                                         </div>
                                     </div>
 
@@ -238,6 +275,17 @@ export default function SubmitThesisPage() {
                                                 type="date"
                                                 value={form.defenseDate}
                                                 onChange={e => setForm({ ...form, defenseDate: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="className">Classe / Niveau *</Label>
+                                            <Input
+                                                id="className"
+                                                value={form.className}
+                                                onChange={e => setForm({ ...form, className: e.target.value })}
+                                                placeholder="Ex: Master 2, Licence 3..."
+                                                className="h-12"
                                                 required
                                             />
                                         </div>
